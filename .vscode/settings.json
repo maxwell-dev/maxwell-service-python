@@ -1,0 +1,15 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode", // Makes the magic
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+
+  "[rust]": {
+    // "editor.defaultFormatter": "esbenp.prettier-vscode", // Makes the magic
+    "editor.defaultFormatter": "statiolake.vscode-rustfmt", // Makes the magic
+    "editor.formatOnSave": true
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "python.formatting.provider": "none"
+}

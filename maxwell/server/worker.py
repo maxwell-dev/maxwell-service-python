@@ -1,6 +1,7 @@
 from typing import Any, Dict
 from uvicorn.workers import UvicornWorker
-from maxwell.config import Config
+from .config import Config
+
 
 class Worker(UvicornWorker):
     CONFIG_KWARGS: Dict[str, Any] = {

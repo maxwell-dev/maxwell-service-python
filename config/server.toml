@@ -1,3 +1,4 @@
 port = 9091
 workers = 2
 proc_name = "maxwell-server-python"
+maxwell_endpoint = "localhost:8081"

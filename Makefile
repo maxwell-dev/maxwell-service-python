@@ -11,7 +11,9 @@ define get_site_dir
 $(shell $(python) -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
 endef
 
-init: create-env create-dirs install-build-tools install-deps set-path
+prepare-dev: create-env create-dirs install-build-tools install-dev-deps set-path
+
+prepare-prod: create-env create-dirs install-build-tools install-prod-deps set-path
 
 create-env:
 	$(python-native) -m venv $(venv-dir)
@@ -23,12 +25,13 @@ install-build-tools:
 	$(pip) install --upgrade pip
 	$(pip) install pip-tools
 
-install-deps:
+install-prod-deps:
 	$(pip-compile) -v
 	$(pip) install -r requirements.txt
 
-install-optional-deps:
-	$(pip) install .[test]
+install-dev-deps:
+	$(pip-compile) -v
+	$(pip) install -e .[test]
 
 set-path:
 	echo $(src-dir) > $(call get_site_dir)/my.pth
@@ -40,4 +43,9 @@ test:
 	$(pytest)
 
 clean:
-	rm -rf $(venv-dir) $(prj-dir)/build $(prj-dir)/dist ${prj-dir}/maxwell_server.egg-info
+	rm -rf $(venv-dir) 
+	rm -rf $(prj-dir)/build $(prj-dir)/dist ${prj-dir}/maxwell/maxwell_server.egg-info
+	rm -rf $(prj-dir)/examples/__pycache__ 
+	rm -rf $(prj-dir)/maxwell/__pycache__ $(prj-dir)/maxwell/server/__pycache__
+	rm -rf $(prj-dir)/test/__pycache__
+	rm -rf $(prj-dir)/.pytest_cache

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 dependencies = [
-    "fastapi[all] == 0.89.1",
+    "fastapi[all] == 0.92.0",
     "gunicorn[setproctitle] == 20.1.0",
     "tomli == 2.0.1",
     "portpicker == 1.5.2",
@@ -23,8 +23,14 @@ classifiers = [
 ]
 requires-python = ">=3.7"
 
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "DEBUG"
+log_cli_format = "[%(levelname)8s] %(asctime)s (%(filename)s:%(lineno)s) %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
 [project.optional-dependencies]
-test = ["pytest >= 7.2.0", "pytest-cov[all]"]
+test = ["pytest >= 7.2.0", "pytest-asyncio >= 0.20.3", "pytest-cov[all]"]
 
 [project.urls]
 repository = "https://github.com/maxwell-dev/maxwell-server-python"
@@ -32,3 +38,8 @@ changelog = "https://github.com/maxwell-dev/maxwell-server-python/CHANGELOG.md"
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.setuptools.packages.find]
+where = [
+    "maxwell",
+] # list of folders that contain the packages (["."] by default)
