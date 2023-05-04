@@ -33,7 +33,7 @@ class App(FastAPI):
         return self.__ws_routes.get(path)
 
     def __init_ws(self):
-        @self.websocket("/")
+        @self.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket):
             await websocket.accept()
             try:

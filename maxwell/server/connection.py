@@ -288,4 +288,4 @@ class Connection(Listenable):
         return new_ref
 
     def __build_url(self, endpoint):
-        return "ws://" + endpoint
+        return "ws://" + endpoint + "/ws"
