@@ -1,13 +1,8 @@
 import asyncio
 import logging
-import traceback
-import threading
 import gunicorn.app.base
-import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 from .config import Config
-from .connection import Connection
-from .connection import Event
-
+from .reporter import Reporter
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +25,8 @@ class Server(gunicorn.app.base.BaseApplication):
 
         self.__app = app
         self.__loop = asyncio.get_event_loop()
-        self.__running = True
-        self.__should_report_event = asyncio.Event()
-        self.__should_report_event.clear()
+
+        self.__reporter = Reporter(self.__app, self.__loop)
 
     def load_config(self):
         config = {
@@ -46,40 +40,8 @@ class Server(gunicorn.app.base.BaseApplication):
     def load(self):
         return self.application
 
-    def __on_started(self, server):
-        t = threading.Thread(target=self.__run_loop, args=(self.__loop,), daemon=True)
-        t.start()
-        logger.info("Report thread started.")
+    def __on_started(self, _server):
+        self.__reporter.start()
 
-    def __on_exit(self, server):
-        self.__running = False
-
-    def __run_loop(self, loop):
-        loop.run_until_complete(self.__repeat_report())
-        loop.close()
-        logger.info("Report thread stopped.")
-
-    async def __repeat_report(self):
-        conn = Connection(endpoint="localhost:8081", loop=self.__loop)
-        conn.add_listener(event=Event.ON_CONNECTED, callback=self.__on_connected)
-
-        while self.__running:
-            try:
-                await self.__should_report_event.wait()
-                req = protocol_types.register_server_req_t()
-                req.http_port = Config.singleton().get_port()
-                _ = await conn.request(req)
-                logger.info("Registered server successfully!")
-                req = protocol_types.add_routes_req_t()
-                req.paths.extend(self.__app.get_ws_routes())
-                _ = await conn.request(req)
-                logger.info("Added routes successfully!")
-                self.__should_report_event.clear()
-            except Exception:
-                logger.error("Failed to report: %s", traceback.format_exc())
-                await asyncio.sleep(1)
-
-        await conn.close()
-
-    def __on_connected(self):
-        self.__should_report_event.set()
+    def __on_exit(self, _server):
+        self.__reporter.stop()

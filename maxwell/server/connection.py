@@ -3,6 +3,7 @@ import asyncio
 import collections
 import traceback
 import logging
+from typing import Callable
 import websockets
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 import maxwell.protocol.maxwell_protocol as protocol
@@ -65,12 +66,14 @@ class Connection(Listenable):
     # ===========================================
     # apis
     # ===========================================
-    def __init__(self, endpoint, options={}, loop=None):
+    def __init__(self, endpoint: str | Callable[[], str], options={}, loop=None):
         super().__init__()
 
         self.__endpoint = endpoint
         self.__options = self.__build_options(options)
         self.__loop = loop if loop else asyncio.get_event_loop()
+
+        self.__resolved_endpoint = None
 
         self.__should_run = True
         self.__repeat_reconnect_task = None
@@ -85,6 +88,9 @@ class Connection(Listenable):
         self.__toggle_to_close()
         self.__add_repeat_reconnect_task()
         self.__add_repeat_receive_task()
+
+    def __del__(self):
+        self.close()
 
     async def close(self):
         self.__should_run = False
@@ -148,9 +154,10 @@ class Connection(Listenable):
 
     async def __connect(self):
         try:
+            url = self.__resolve_url()
             self.__on_connecting()
             self.__websocket = await websockets.connect(
-                uri=self.__build_url(self.__endpoint),
+                uri=url,
                 ping_interval=self.__options.get("ping_interval"),
                 max_size=None,
             )
@@ -198,7 +205,7 @@ class Connection(Listenable):
         try:
             await self.__websocket.send(encoded_msg)
         except websockets.ConnectionClosed:
-            logger.warning("Connection closed: endpoint: %s", self.__endpoint)
+            logger.warning("Connection closed: endpoint: %s", self.__resolved_endpoint)
             self.__toggle_to_close()
             self.__on_error(Code.FAILED_TO_SEND)
             raise Exception(Code.FAILED_TO_SEND)
@@ -214,18 +221,18 @@ class Connection(Listenable):
     async def __repeat_receive(self):
         while self.__should_run:
             await self.__open_event.wait()
-            await self.__recv()
+            await self.__receive()
 
-    async def __recv(self):
+    async def __receive(self):
         try:
             encoded_msg = await self.__websocket.recv()
         except websockets.ConnectionClosed:
-            logger.warning("Connection closed: endpoint: %s", self.__endpoint)
+            logger.warning("Connection closed: endpoint: %s", self.__resolved_endpoint)
             self.__toggle_to_close()
             self.__on_error(Code.FAILED_TO_RECEIVE)
             return
         except Exception:
-            logger.error("Failed to recv: %s", traceback.format_exc())
+            logger.error("Failed to receive: %s", traceback.format_exc())
             self.__on_error(Code.FAILED_TO_RECEIVE)
             return
 
@@ -250,19 +257,19 @@ class Connection(Listenable):
     # listeners
     # ===========================================
     def __on_connecting(self):
-        logger.info("Connecting to endpoint: %s", self.__endpoint)
+        logger.info("Connecting to endpoint: %s", self.__resolved_endpoint)
         self.notify(Event.ON_CONNECTING)
 
     def __on_connected(self):
-        logger.info("Connected to endpoint: %s", self.__endpoint)
+        logger.info("Connected to endpoint: %s", self.__resolved_endpoint)
         self.notify(Event.ON_CONNECTED)
 
     def __on_disconnecting(self):
-        logger.info("Disconnecting from endpoint: %s", self.__endpoint)
+        logger.info("Disconnecting from endpoint: %s", self.__resolved_endpoint)
         self.notify(Event.ON_DISCONNECTING)
 
     def __on_disconnected(self):
-        logger.info("Disconnected from endpoint: %s", self.__endpoint)
+        logger.info("Disconnected from endpoint: %s", self.__resolved_endpoint)
         self.notify(Event.ON_DISCONNECTED)
 
     def __on_error(self, code):
@@ -277,15 +284,21 @@ class Connection(Listenable):
         if options.get("reconnect_delay") == None:
             options["reconnect_delay"] = 1
         if options.get("ping_interval") == None:
-            options["ping_interval"] = 10
+            options["ping_interval"] = None
         return options
 
     def __next_ref(self):
         new_ref = self.__last_ref + 1
-        if new_ref > 1000000:
+        if new_ref > 2100000000:
             new_ref = 1
         self.__last_ref = new_ref
         return new_ref
 
-    def __build_url(self, endpoint):
-        return "ws://" + endpoint + "/ws"
+    def __resolve_url(self):
+        return "ws://" + self.__resolve_endpoint() + "/ws"
+
+    def __resolve_endpoint(self):
+        self.__resolved_endpoint = (
+            self.__endpoint() if callable(self.__endpoint) else self.__endpoint
+        )
+        return self.__resolved_endpoint

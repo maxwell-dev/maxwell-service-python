@@ -9,6 +9,8 @@ anyio==3.6.2
     #   httpcore
     #   starlette
     #   watchfiles
+async-lru==2.0.2
+    # via maxwell-server (setup.py)
 certifi==2022.12.7
     # via
     #   httpcore
@@ -80,7 +82,9 @@ starlette==0.25.0
 tomli==2.0.1
     # via maxwell-server (setup.py)
 typing-extensions==4.4.0
-    # via pydantic
+    # via
+    #   async-lru
+    #   pydantic
 ujson==5.7.0
     # via fastapi
 uvicorn[standard]==0.20.0

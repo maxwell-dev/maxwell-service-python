@@ -40,6 +40,13 @@ class Config:
         else:
             return proc_name
 
+    def get_master_endpoints(self):
+        master_endpoints = self.__server_config.get("master_endpoints")
+        if master_endpoints is None:
+            raise "Must specify master_endpoints in server.toml"
+        else:
+            return master_endpoints
+
     def get_log_config(self):
         return self.__log_config
 
