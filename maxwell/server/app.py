@@ -50,13 +50,17 @@ class App(FastAPI):
                             rep.ref = msg.ref
                             await websocket.send_bytes(protocol.encode_msg(rep))
                         else:
-                            logger.error("Received unknown path: %s", msg.path)
+                            logger.error("Unknown path: %s", msg.path)
                             rep = protocol_types.error2_rep_t()
                             rep.code = 1
                             rep.desc = "Unknown path: %s" % msg.path
                             rep.conn0_ref = msg.conn0_ref
                             rep.ref = msg.ref
                             await websocket.send_bytes(protocol.encode_msg(rep))
+                    elif msg.__class__ == protocol_types.ping_req_t:
+                        rep = protocol_types.ping_rep_t()
+                        rep.ref = msg.ref
+                        await websocket.send_bytes(protocol.encode_msg(rep))
                     else:
                         logger.error("Received unknown msg: %s", msg)
             except WebSocketDisconnect:

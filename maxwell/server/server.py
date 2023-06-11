@@ -11,7 +11,7 @@ class Server(gunicorn.app.base.BaseApplication):
     def __init__(self, app):
         config = Config.singleton()
         self.options = {
-            "bind": "0.0.0.0:{}".format(config.get_port()),
+            "bind": ["0.0.0.0:{}".format(config.get_port()), "0.0.0.0:2021"],
             "workers": config.get_workers(),
             "proc_name": config.get_proc_name(),
             "logconfig_dict": config.get_log_config(),
