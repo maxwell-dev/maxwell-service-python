@@ -45,7 +45,7 @@ class App(FastAPI):
                         if handler is not None:
                             logger.debug("Received msg: %s", msg)
                             rep = protocol_types.req_rep_t()
-                            rep.payload = handler()
+                            rep.payload = handler(msg)
                             rep.conn0_ref = msg.conn0_ref
                             rep.ref = msg.ref
                             await websocket.send_bytes(protocol.encode_msg(rep))

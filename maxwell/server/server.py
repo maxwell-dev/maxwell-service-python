@@ -17,6 +17,7 @@ class Server(gunicorn.app.base.BaseApplication):
             "logconfig_dict": config.get_log_config(),
             "worker_class": "maxwell.server.worker.Worker",
             "proxy_allow_ips": "*",
+            "reuse_port": True,
             "when_ready": self.__on_started,
             "on_exit": self.__on_exit,
         }

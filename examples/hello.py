@@ -30,7 +30,7 @@ def build_candles():
 
 
 @app.ws("/hello")
-def hello():
+def hello(msg):
     return json.dumps(build_candles())
 
 
