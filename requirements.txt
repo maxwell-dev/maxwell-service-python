@@ -21,7 +21,7 @@ dnspython==2.3.0
     # via email-validator
 email-validator==1.3.1
     # via fastapi
-fastapi[all]==0.92.0
+fastapi[all]==0.98.0
     # via maxwell-server (setup.py)
 gunicorn[setproctitle]==20.1.0
     # via maxwell-server (setup.py)
@@ -77,7 +77,7 @@ sniffio==1.3.0
     #   anyio
     #   httpcore
     #   httpx
-starlette==0.25.0
+starlette==0.27.0
     # via fastapi
 tomli==2.0.1
     # via maxwell-server (setup.py)

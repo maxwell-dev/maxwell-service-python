@@ -10,7 +10,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "fastapi[all] == 0.92.0",
+  "fastapi[all] == 0.98.0",
   "gunicorn[setproctitle] == 20.1.0",
   "tomli == 2.0.1",
   "portpicker == 1.5.2",
