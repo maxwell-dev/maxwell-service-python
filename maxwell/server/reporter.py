@@ -68,7 +68,10 @@ class Reporter(object):
         logger.info("Registered server successfully!")
 
     async def __add_routes(self):
+        ws_routes = {}
+        for path, handler in self.__app.get_ws_routes().items():
+            ws_routes[path] = handler[0]
         req = protocol_types.add_routes_req_t()
-        req.paths.extend(self.__app.get_ws_routes())
+        req.paths.extend(ws_routes)
         _ = await self.__master_client.request(req)
         logger.info("Added routes successfully!")

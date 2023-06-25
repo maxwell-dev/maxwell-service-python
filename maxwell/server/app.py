@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import functools
+import inspect
 from typing import Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
@@ -21,7 +23,7 @@ class App(FastAPI):
                 value = func(*args, **kwargs)
                 return value
 
-            self.__ws_routes[path] = func_wrapper
+            self.__ws_routes[path] = [func_wrapper, inspect.iscoroutinefunction(func)]
             return func_wrapper
 
         return decorator
@@ -39,29 +41,32 @@ class App(FastAPI):
             try:
                 while True:
                     data = await websocket.receive_bytes()
-                    msg = protocol.decode_msg(data)
-                    if msg.__class__ == protocol_types.req_req_t:
-                        handler = self.get_handler(msg.path)
+                    req = protocol.decode_msg(data)
+                    if req.__class__ == protocol_types.req_req_t:
+                        handler = self.get_handler(req.path)
                         if handler is not None:
-                            logger.debug("Received msg: %s", msg)
+                            logger.debug("Received msg: %s", req)
                             rep = protocol_types.req_rep_t()
-                            rep.payload = handler(msg)
-                            rep.conn0_ref = msg.conn0_ref
-                            rep.ref = msg.ref
+                            if handler[1] is True:
+                                rep.payload = await handler[0](req)
+                            else:
+                                rep.payload = handler[0](req)
+                            rep.conn0_ref = req.conn0_ref
+                            rep.ref = req.ref
                             await websocket.send_bytes(protocol.encode_msg(rep))
                         else:
-                            logger.error("Unknown path: %s", msg.path)
+                            logger.error("Unknown path: %s", req.path)
                             rep = protocol_types.error2_rep_t()
                             rep.code = 1
-                            rep.desc = "Unknown path: %s" % msg.path
-                            rep.conn0_ref = msg.conn0_ref
-                            rep.ref = msg.ref
+                            rep.desc = "Unknown path: %s" % req.path
+                            rep.conn0_ref = req.conn0_ref
+                            rep.ref = req.ref
                             await websocket.send_bytes(protocol.encode_msg(rep))
-                    elif msg.__class__ == protocol_types.ping_req_t:
+                    elif req.__class__ == protocol_types.ping_req_t:
                         rep = protocol_types.ping_rep_t()
-                        rep.ref = msg.ref
+                        rep.ref = req.ref
                         await websocket.send_bytes(protocol.encode_msg(rep))
                     else:
-                        logger.error("Received unknown msg: %s", msg)
+                        logger.error("Received unknown msg: %s", req)
             except WebSocketDisconnect:
                 logger.warning("Connection was closed.")
