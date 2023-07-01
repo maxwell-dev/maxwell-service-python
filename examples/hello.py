@@ -31,6 +31,7 @@ def build_candles():
 
 @app.ws("/hello")
 async def hello(req):
+    logger.debug(" %s ", req)
     return json.dumps(build_candles())
 
 

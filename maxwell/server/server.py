@@ -11,13 +11,12 @@ class Server(gunicorn.app.base.BaseApplication):
     def __init__(self, app):
         config = Config.singleton()
         self.options = {
-            "bind": ["0.0.0.0:{}".format(config.get_port()), "0.0.0.0:2021"],
+            "bind": ["0.0.0.0:{}".format(config.get_port())],
             "workers": config.get_workers(),
             "proc_name": config.get_proc_name(),
             "logconfig_dict": config.get_log_config(),
             "worker_class": "maxwell.server.worker.Worker",
             "proxy_allow_ips": "*",
-            "reuse_port": True,
             "when_ready": self.__on_started,
             "on_exit": self.__on_exit,
         }
