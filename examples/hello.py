@@ -8,7 +8,6 @@ from maxwell.server.server import Server
 from maxwell.server.app import App
 from maxwell.server.publisher import Publisher
 
-
 logger = logging.getLogger(__name__)
 app = App()
 

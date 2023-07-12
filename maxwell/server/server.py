@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import gunicorn.app.base
+
+from .hooks import Hooks
 from .config import Config
 from .reporter import Reporter
 
@@ -8,8 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 class Server(gunicorn.app.base.BaseApplication):
-    def __init__(self, app):
+    def __init__(self, app, hooks=None):
         config = Config.singleton()
+        hooks = hooks or Hooks()
+
         self.options = {
             "bind": ["0.0.0.0:{}".format(config.get_port())],
             "workers": config.get_workers(),
@@ -19,10 +23,14 @@ class Server(gunicorn.app.base.BaseApplication):
             "proxy_allow_ips": "*",
             "when_ready": self.__on_started,
             "on_exit": self.__on_exit,
+            "post_worker_init": hooks.post_app_init,
+            "post_fork": hooks.post_worker_fork,
+            "worker_exit": hooks.post_worker_exit,
         }
         self.application = app
         super().__init__()
 
+        self.__hooks = hooks
         self.__app = app
         self.__loop = asyncio.get_event_loop()
 
