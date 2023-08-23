@@ -55,4 +55,5 @@ if __name__ == "__main__":
     loop = asyncio.new_event_loop()
     t = threading.Thread(target=run_publisher, args=(loop,), daemon=True)
     t.start()
+    app.register()
     Server(app).run()

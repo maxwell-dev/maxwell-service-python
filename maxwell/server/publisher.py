@@ -1,3 +1,4 @@
+import random
 import logging
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 
@@ -23,7 +24,7 @@ class Publisher(object):
         self.close()
 
     def close(self):
-        for connections in self.__connections.values:
+        for connections in self.__connections.values():
             for connection in connections:
                 connection.close()
 
@@ -35,18 +36,16 @@ class Publisher(object):
     # ===========================================
     # internal functions
     # ===========================================
+
     async def __get_connetion(self, topic):
-        connections = self.__connections.get(topic)
-        if connections == None:
-            endpoint = await self.__topic_locatlizer.locate(topic)
+        endpoint = await self.__topic_locatlizer.locate(topic)
+        connections = self.__connections.get(endpoint)
+        if connections is None:
             connections = []
             for _ in range(3):
                 connections.append(Connection(endpoint, self.__options, self.__loop))
-            self.__connections[topic] = connections
-        return connections[self.__get_index(topic)]
-
-    def __get_index(self, topic):
-        return abs(hash(topic)) % 3
+            self.__connections[endpoint] = connections
+        return connections[random.randint(0, 2)]
 
     def __build_publish_req(self, topic, value):
         push_req = protocol_types.push_req_t()

@@ -14,9 +14,9 @@ class Reporter(object):
     # ===========================================
     # apis
     # ===========================================
-    def __init__(self, app, loop):
+    def __init__(self, app, loop=None):
         self.__app = app
-        self.__loop = loop
+        self.__loop = loop if loop else asyncio.new_event_loop()
 
         self.__master_client = None
         self.__running = True

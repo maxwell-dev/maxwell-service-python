@@ -1,9 +1,15 @@
 import multiprocessing
 import os
+import re
+import socket
+import traceback
+import logging
 import json
 import tomli
 from distutils.sysconfig import get_python_lib
 from portpicker import pick_unused_port
+
+logger = logging.getLogger(__name__)
 
 
 class Config:
@@ -22,9 +28,10 @@ class Config:
     def get_port(self):
         port = self.__server_config.get("port")
         if port is None:
-            return pick_unused_port()
-        else:
-            return port
+            # port = pick_unused_port()
+            port = self.__get_unused_port()
+            self.__try_write_port_to_config(port)
+        return port
 
     def get_workers(self):
         workers = self.__server_config.get("workers")
@@ -49,6 +56,34 @@ class Config:
 
     def get_log_config(self):
         return self.__log_config
+
+    def __try_write_port_to_config(self, port):
+        try:
+            config_path = self.__get_server_config_file()
+            append_string = f"port = {port}\n"
+            with open(config_path, 'r+') as file:
+                content = file.read()
+                if not re.search(r"^port", content, re.MULTILINE):
+                    file.write(append_string + '\n')
+                    logger.info(f"Write new port: %s", port)
+                else:
+                    logger.info(f"Ignore: port already exists: %s", port)
+        except Exception:
+            logger.warning("Error occurred: %s", traceback.format_exc())
+
+    def __get_unused_port(self):
+        # 用 proxy chains 代理时，端口号选择有问题, 所以选择标准库实现该函数
+        attempt = 10
+        while attempt > 0:
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.bind(('localhost', 0))
+                    _, port = s.getsockname()
+                    return port
+            except Exception:
+                logger.warning("Error occurred: %s", traceback.format_exc())
+                attempt -= 1
+        raise ValueError("Cannot find unused port")
 
     def __build_server_config(self):
         config_path = self.__get_server_config_file()
