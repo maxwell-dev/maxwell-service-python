@@ -5,11 +5,11 @@ import threading
 import traceback
 
 from maxwell.server.server import Server
-from maxwell.server.app import App
+from maxwell.server.service import Service
 from maxwell.server.publisher import Publisher
 
 logger = logging.getLogger(__name__)
-app = App()
+service = Service()
 
 
 def build_candles():
@@ -28,7 +28,7 @@ def build_candles():
     return candles
 
 
-@app.ws("/hello")
+@service.ws("/hello")
 async def hello(req):
     logger.debug(" %s ", req)
     return json.dumps(build_candles())
@@ -52,8 +52,7 @@ def run_publisher(loop):
 
 
 if __name__ == "__main__":
-    loop = asyncio.new_event_loop()
-    t = threading.Thread(target=run_publisher, args=(loop,), daemon=True)
-    t.start()
-    app.register()
-    Server(app).run()
+    # loop = asyncio.new_event_loop()
+    # t = threading.Thread(target=run_publisher, args=(loop,), daemon=True)
+    # t.start()
+    Server(service).run()

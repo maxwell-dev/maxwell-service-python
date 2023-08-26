@@ -7,7 +7,6 @@ import logging
 import json
 import tomli
 from distutils.sysconfig import get_python_lib
-from portpicker import pick_unused_port
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +27,8 @@ class Config:
     def get_port(self):
         port = self.__server_config.get("port")
         if port is None:
-            # port = pick_unused_port()
             port = self.__get_unused_port()
-            self.__try_write_port_to_config(port)
+            self.__save_port_to_config_file(port)
         return port
 
     def get_workers(self):
@@ -50,40 +48,12 @@ class Config:
     def get_master_endpoints(self):
         master_endpoints = self.__server_config.get("master_endpoints")
         if master_endpoints is None:
-            raise "Must specify master_endpoints in server.toml"
+            raise "Please specify master_endpoints in server.toml"
         else:
             return master_endpoints
 
     def get_log_config(self):
         return self.__log_config
-
-    def __try_write_port_to_config(self, port):
-        try:
-            config_path = self.__get_server_config_file()
-            append_string = f"port = {port}\n"
-            with open(config_path, 'r+') as file:
-                content = file.read()
-                if not re.search(r"^port", content, re.MULTILINE):
-                    file.write(append_string + '\n')
-                    logger.info(f"Write new port: %s", port)
-                else:
-                    logger.info(f"Ignore: port already exists: %s", port)
-        except Exception:
-            logger.warning("Error occurred: %s", traceback.format_exc())
-
-    def __get_unused_port(self):
-        # 用 proxy chains 代理时，端口号选择有问题, 所以选择标准库实现该函数
-        attempt = 10
-        while attempt > 0:
-            try:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.bind(('localhost', 0))
-                    _, port = s.getsockname()
-                    return port
-            except Exception:
-                logger.warning("Error occurred: %s", traceback.format_exc())
-                attempt -= 1
-        raise ValueError("Cannot find unused port")
 
     def __build_server_config(self):
         config_path = self.__get_server_config_file()
@@ -92,6 +62,14 @@ class Config:
                 return tomli.load(f)
         else:
             return {}
+
+    def __get_server_config_file(self):
+        specified_config_file = os.getenv("SERVER_CFG_FILE", None)
+        if specified_config_file:
+            config_file = specified_config_file
+        else:
+            config_file = os.path.join(self.__get_root_dir(), "config", "service.toml")
+        return config_file
 
     def __build_log_config(self):
         config_path = self.__get_log_config_file()
@@ -105,14 +83,6 @@ class Config:
                 return config
         else:
             return None
-
-    def __get_server_config_file(self):
-        specified_config_file = os.getenv("SERVER_CFG_FILE", None)
-        if specified_config_file:
-            config_file = specified_config_file
-        else:
-            config_file = os.path.join(self.__get_root_dir(), "config", "server.toml")
-        return config_file
 
     def __get_log_config_file(self):
         specified_config_file = os.getenv("LOG_CFG_FILE", None)
@@ -130,3 +100,30 @@ class Config:
 
     def __get_log_dir(self):
         return os.path.join(self.__get_root_dir(), "log")
+
+    def __get_unused_port(self):
+        # Implement this function instead of using portpicker to be compatiable with proxy chains
+        while attempt > 0:
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.bind(("localhost", 0))
+                    _, port = s.getsockname()
+                    return port
+            except Exception:
+                logger.warning("Error occurred: %s", traceback.format_exc())
+                attempt -= 1
+        raise ValueError("Cannot find unused port")
+
+    def __save_port_to_config_file(self, port):
+        try:
+            config_path = self.__get_server_config_file()
+            append_string = f"port = {port}\n"
+            with open(config_path, "r+") as file:
+                content = file.read()
+                if not re.search(r"^port", content, re.MULTILINE):
+                    file.write(append_string + "\n")
+                    logger.info(f"Writed new port: %s", port)
+                else:
+                    logger.info(f"Ignored, as port already exists: %s", port)
+        except Exception:
+            logger.warning("Error occurred: %s", traceback.format_exc())

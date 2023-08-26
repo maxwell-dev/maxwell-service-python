@@ -73,7 +73,7 @@ class Connection(Listenable):
         self.__options = self.__build_options(options)
         self.__loop = loop if loop else asyncio.get_event_loop()
 
-        self.__resolved_endpoint = None
+        self.__curr_endpoint = None
 
         self.__should_run = True
         self.__repeat_reconnect_task = None
@@ -205,7 +205,7 @@ class Connection(Listenable):
         try:
             await self.__websocket.send(encoded_msg)
         except websockets.ConnectionClosed:
-            logger.warning("Connection closed: endpoint: %s", self.__resolved_endpoint)
+            logger.warning("Connection closed: endpoint: %s", self.__curr_endpoint)
             self.__toggle_to_close()
             self.__on_error(Code.FAILED_TO_SEND)
             raise Exception(Code.FAILED_TO_SEND)
@@ -227,7 +227,7 @@ class Connection(Listenable):
         try:
             encoded_msg = await self.__websocket.recv()
         except websockets.ConnectionClosed:
-            logger.warning("Connection closed: endpoint: %s", self.__resolved_endpoint)
+            logger.warning("Connection closed: endpoint: %s", self.__curr_endpoint)
             self.__toggle_to_close()
             self.__on_error(Code.FAILED_TO_RECEIVE)
             return
@@ -257,19 +257,19 @@ class Connection(Listenable):
     # listeners
     # ===========================================
     def __on_connecting(self):
-        logger.info("Connecting to endpoint: %s", self.__resolved_endpoint)
+        logger.info("Connecting to endpoint: %s", self.__curr_endpoint)
         self.notify(Event.ON_CONNECTING)
 
     def __on_connected(self):
-        logger.info("Connected to endpoint: %s", self.__resolved_endpoint)
+        logger.info("Connected to endpoint: %s", self.__curr_endpoint)
         self.notify(Event.ON_CONNECTED)
 
     def __on_disconnecting(self):
-        logger.info("Disconnecting from endpoint: %s", self.__resolved_endpoint)
+        logger.info("Disconnecting from endpoint: %s", self.__curr_endpoint)
         self.notify(Event.ON_DISCONNECTING)
 
     def __on_disconnected(self):
-        logger.info("Disconnected from endpoint: %s", self.__resolved_endpoint)
+        logger.info("Disconnected from endpoint: %s", self.__curr_endpoint)
         self.notify(Event.ON_DISCONNECTED)
 
     def __on_error(self, code):
@@ -295,10 +295,10 @@ class Connection(Listenable):
         return new_ref
 
     def __resolve_url(self):
-        return "ws://" + self.__resolve_endpoint() + "/ws"
+        return "ws://" + self.__resolve_endpoint() + "/$ws"
 
     def __resolve_endpoint(self):
-        self.__resolved_endpoint = (
+        self.__curr_endpoint = (
             self.__endpoint() if callable(self.__endpoint) else self.__endpoint
         )
-        return self.__resolved_endpoint
+        return self.__curr_endpoint

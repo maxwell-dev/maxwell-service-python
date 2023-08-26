@@ -32,9 +32,9 @@ class MasterClient(object):
     def delete_connection_listener(self, event, callback):
         self.__connection.delete_listener(event, callback)
 
-    async def resolve_frontend(self):
-        assign_frontend_req = protocol_types.assign_frontend_req_t()
-        return await self.request(assign_frontend_req)
+    async def pick_frontend(self):
+        pick_frontend_req = protocol_types.pick_frontend_req_t()
+        return await self.request(pick_frontend_req)
 
     async def locate_topic(self, topic):
         locate_topic_req = protocol_types.locate_topic_req_t()
