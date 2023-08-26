@@ -1,6 +1,6 @@
 import logging
 import pytest
-from maxwell.server.connection import Connection
+from maxwell.service.connection import Connection
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 import maxwell.protocol.maxwell_protocol as protocol
 

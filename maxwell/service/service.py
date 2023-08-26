@@ -7,7 +7,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 import maxwell.protocol.maxwell_protocol as protocol
 
-from maxwell.server.registrar import Registrar
+from maxwell.service.registrar import Registrar
 
 logger = logging.getLogger(__name__)
 

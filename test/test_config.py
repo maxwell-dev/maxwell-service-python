@@ -1,4 +1,4 @@
-from maxwell.server.config import Config
+from maxwell.service.config import Config
 
 
 class TestConfig:

@@ -4,9 +4,9 @@ import json
 import threading
 import traceback
 
-from maxwell.server.server import Server
-from maxwell.server.service import Service
-from maxwell.server.publisher import Publisher
+from maxwell.service.server import Server
+from maxwell.service.service import Service
+from maxwell.service.publisher import Publisher
 
 logger = logging.getLogger(__name__)
 service = Service()

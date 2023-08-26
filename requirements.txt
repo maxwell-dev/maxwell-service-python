@@ -12,7 +12,7 @@ anyio==3.6.2
     #   starlette
     #   watchfiles
 async-lru==2.0.4
-    # via maxwell-server (setup.py)
+    # via maxwell-service (setup.py)
 certifi==2022.12.7
     # via
     #   httpcore
@@ -24,9 +24,9 @@ dnspython==2.3.0
 email-validator==2.0.0.post2
     # via fastapi
 fastapi[all]==0.101.1
-    # via maxwell-server (setup.py)
+    # via maxwell-service (setup.py)
 gunicorn[setproctitle]==21.2.0
-    # via maxwell-server (setup.py)
+    # via maxwell-service (setup.py)
 h11==0.14.0
     # via
     #   httpcore
@@ -48,8 +48,8 @@ jinja2==3.1.2
     # via fastapi
 markupsafe==2.1.2
     # via jinja2
-maxwell-protocol @ git+https://github.com/maxwell-dev/maxwell-protocol-python.git@dev
-    # via maxwell-server (setup.py)
+maxwell-protocol @ git+https://github.com/maxwell-dev/maxwell-protocol-python.git@v0.6.3
+    # via maxwell-service (setup.py)
 orjson==3.8.5
     # via fastapi
 packaging==23.1
@@ -91,7 +91,7 @@ sniffio==1.3.0
 starlette==0.27.0
     # via fastapi
 tomli==2.0.1
-    # via maxwell-server (setup.py)
+    # via maxwell-service (setup.py)
 typing-extensions==4.7.1
     # via
     #   fastapi
