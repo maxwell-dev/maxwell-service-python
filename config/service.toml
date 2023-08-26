@@ -1,0 +1,7 @@
+connection_slot_size = 8
+endpoint_cache_size = 100000
+endpoint_cache_ttl = 86400
+master_endpoints = ["localhost:8081"]
+port = 9091
+proc_name = "maxwell-service-python"
+workers = 2
