@@ -48,7 +48,7 @@ jinja2==3.1.2
     # via fastapi
 markupsafe==2.1.2
     # via jinja2
-maxwell-protocol @ git+https://github.com/maxwell-dev/maxwell-protocol-python.git@v0.6.3
+maxwell-protocol @ git+https://github.com/maxwell-dev/maxwell-protocol-python.git@v0.6.5
     # via maxwell-service (setup.py)
 orjson==3.8.5
     # via fastapi

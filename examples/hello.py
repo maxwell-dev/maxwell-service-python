@@ -28,7 +28,7 @@ def build_candles():
     return candles
 
 
-@service.ws("/hello")
+@service.ws("/hello2")
 async def hello(req):
     logger.debug(" %s ", req)
     return json.dumps(build_candles())

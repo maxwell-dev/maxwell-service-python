@@ -22,7 +22,7 @@ class Server(gunicorn.app.base.BaseApplication):
             "workers": config.get_workers(),
             "proc_name": config.get_proc_name(),
             "logconfig_dict": config.get_log_config(),
-            "worker_class": "maxwell.server.worker.Worker",
+            "worker_class": "maxwell.service.worker.Worker",
             "proxy_allow_ips": "*",
             "post_worker_init": self.__post_worker_init,
             "post_fork": self.__post_fork,

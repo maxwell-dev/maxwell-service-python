@@ -68,7 +68,7 @@ class Service(FastAPI):
                 else:
                     logger.error("Unknown path: %s", req.path)
                     rep = protocol_types.error2_rep_t()
-                    rep.code = 1
+                    rep.code = protocol_types.error_code_t.UNKNOWN_PATH
                     rep.desc = "Unknown path: %s" % req.path
                     rep.conn0_ref = req.conn0_ref
                     rep.ref = req.ref
