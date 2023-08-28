@@ -12,26 +12,27 @@ logger = logging.getLogger(__name__)
 service = Service()
 
 
-def build_candles():
-    candles = []
-    for i in range(0, 30000):
-        candles.append(
-            {
-                "ts": i,
-                "open": i + 1,
-                "high": i + 2,
-                "low": i + 3,
-                "close": i + 4,
-                "volume": i + 5,
-            }
-        )
-    return candles
+# def build_candles():
+#     candles = []
+#     for i in range(0, 30000):
+#         candles.append(
+#             {
+#                 "ts": i,
+#                 "open": i + 1,
+#                 "high": i + 2,
+#                 "low": i + 3,
+#                 "close": i + 4,
+#                 "volume": i + 5,
+#             }
+#         )
+#     return candles
 
 
-@service.ws("/hello2")
+@service.ws("/hello")
 async def hello(req):
     logger.debug(" %s ", req)
-    return json.dumps(build_candles())
+    # return json.dumps(build_candles())
+    return json.dumps("python")
 
 
 async def run_publisher_coro(loop):
@@ -55,4 +56,4 @@ if __name__ == "__main__":
     # loop = asyncio.new_event_loop()
     # t = threading.Thread(target=run_publisher, args=(loop,), daemon=True)
     # t.start()
-    Server(service).run()
+    Server(service.register()).run()

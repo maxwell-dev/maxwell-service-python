@@ -1,19 +1,18 @@
 import asyncio
 import logging
 import gunicorn.app.base
-from multiprocessing import Queue, Value
-from ctypes import c_bool
+from multiprocessing import Queue
+import time
 
 from .config import Config
 from .hooks import Hooks
 from .registrar import Registrar
 
-
 logger = logging.getLogger(__name__)
 
 
 class Server(gunicorn.app.base.BaseApplication):
-    def __init__(self, app, hooks=None):
+    def __init__(self, service, hooks=None):
         config = Config.singleton()
         hooks = hooks or Hooks()
 
@@ -30,14 +29,13 @@ class Server(gunicorn.app.base.BaseApplication):
             "when_ready": self.__when_ready,
             "on_exit": self.__on_exit,
         }
-        self.application = app
+        self.application = service
         super().__init__()
 
-        self.__app = app
+        self.__service = service
         self.__hooks = hooks
         self.__queue = Queue()
         self.__registrar = None
-        self.__is_first_worker = Value(c_bool, True)
 
     def load_config(self):
         config = {
@@ -52,14 +50,15 @@ class Server(gunicorn.app.base.BaseApplication):
         return self.application
 
     def __post_worker_init(self, worker):
-        logger.info("[2] post_app_init: worker: %s", worker)
-        self.__hooks.post_app_init(worker)
-        with self.__is_first_worker.get_lock():
-            if self.__is_first_worker.value is True:
-                self.__is_first_worker.value = False
-                paths = self.__app.get_paths()
+        while True:
+            if self.__service.is_registered():
+                logger.info("[2] post_service_init: worker: %s", worker)
+                self.__hooks.post_service_init(worker)
+                paths = self.__service.get_paths()
                 logger.info("Sending paths to registrar: %s", paths)
                 self.__queue.put(paths)
+                break
+            time.sleep(0.1)
 
     def __post_fork(self, server, worker):
         logger.info("[1] post_worker_fork: server: %s, worker: %s", server, worker)
