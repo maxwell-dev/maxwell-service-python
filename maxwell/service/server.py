@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import threading
 import gunicorn.app.base
 from multiprocessing import Queue
 import time
@@ -50,15 +51,19 @@ class Server(gunicorn.app.base.BaseApplication):
         return self.application
 
     def __post_worker_init(self, worker):
-        while True:
-            if self.__service.is_registered():
-                logger.info("[2] post_service_init: worker: %s", worker)
-                self.__hooks.post_service_init(worker)
-                paths = self.__service.get_paths()
-                logger.info("Sending paths to registrar: %s", paths)
-                self.__queue.put(paths)
-                break
-            time.sleep(0.1)
+        def wait_until_registered():
+            while True:
+                if self.__service.is_registered():
+                    logger.info("[2] post_service_init: worker: %s", worker)
+                    self.__hooks.post_service_init(worker)
+                    paths = self.__service.get_paths()
+                    logger.info("Sending paths to registrar: %s", paths)
+                    self.__queue.put(paths)
+                    break
+                time.sleep(0.1)
+
+        t = threading.Thread(target=wait_until_registered, args=(), daemon=True)
+        t.start()
 
     def __post_fork(self, server, worker):
         logger.info("[1] post_worker_fork: server: %s, worker: %s", server, worker)
