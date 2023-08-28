@@ -3,8 +3,6 @@ import logging
 import functools
 import inspect
 from typing import Any
-from multiprocessing import Value
-from ctypes import c_bool
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 import maxwell.protocol.maxwell_protocol as protocol
@@ -17,19 +15,17 @@ logger = logging.getLogger(__name__)
 class Service(FastAPI):
     def __init__(self, *args: Any, **kwargs: Any):
         super(Service, self).__init__(*args, **kwargs)
-        self.__is_registered = Value(c_bool, False)
+        self.__is_registered = False
         self.__ws_routes = {}
         self.__init_ws()
 
     def register(self):
-        with self.__is_registered.get_lock():
-            if self.__is_registered.value is False:
-                self.__is_registered.value = True
+        if self.__is_registered is False:
+            self.__is_registered = True
         return self
 
     def is_registered(self):
-        with self.__is_registered.get_lock():
-            return self.__is_registered.value
+        return self.__is_registered
 
     def ws(self, path):
         def decorator(func):

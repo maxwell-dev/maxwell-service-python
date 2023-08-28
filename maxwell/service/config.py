@@ -103,6 +103,7 @@ class Config:
 
     def __get_unused_port(self):
         # Implement this function instead of using portpicker to be compatiable with proxy chains
+        attempt = 1024
         while attempt > 0:
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

@@ -14,14 +14,14 @@ dependencies = [
   "gunicorn[setproctitle] >= 21.2.0",
   "tomli == 2.0.1",
   "async-lru == 2.0.4",
-  "maxwell-protocol @ git+https://github.com/maxwell-dev/maxwell-protocol-python.git@v0.6.5",
+  "maxwell-protocol == 0.6.5",
 ]
 description = "The maxwell service implementation for python."
 license = {file = "LICENSE"}
 name = "maxwell-service"
 readme = "README.md"
 requires-python = ">=3.7"
-version = "0.6.10"
+version = "0.6.11"
 
 [tool.pytest.ini_options]
 log_cli = true

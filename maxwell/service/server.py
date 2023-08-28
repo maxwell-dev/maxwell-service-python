@@ -2,7 +2,8 @@ import asyncio
 import logging
 import threading
 import gunicorn.app.base
-from multiprocessing import Queue
+from multiprocessing import Queue, Value
+from ctypes import c_bool
 import time
 
 from .config import Config
@@ -36,6 +37,7 @@ class Server(gunicorn.app.base.BaseApplication):
         self.__service = service
         self.__hooks = hooks
         self.__queue = Queue()
+        self.__is_first_registered_service = Value(c_bool, True)
         self.__registrar = None
 
     def load_config(self):
@@ -51,18 +53,24 @@ class Server(gunicorn.app.base.BaseApplication):
         return self.application
 
     def __post_worker_init(self, worker):
-        def wait_until_registered():
+        def wait_service_to_register():
             while True:
                 if self.__service.is_registered():
                     logger.info("[2] post_service_init: worker: %s", worker)
                     self.__hooks.post_service_init(worker)
-                    paths = self.__service.get_paths()
-                    logger.info("Sending paths to registrar: %s", paths)
-                    self.__queue.put(paths)
+
+                    with self.__is_first_registered_service.get_lock():
+                        if self.__is_first_registered_service.value is True:
+                            self.__is_first_registered_service.value = False
+                            paths = self.__service.get_paths()
+                            logger.info("Sending paths to registrar: %s", paths)
+                            self.__queue.put(paths)
+
                     break
+
                 time.sleep(0.1)
 
-        t = threading.Thread(target=wait_until_registered, args=(), daemon=True)
+        t = threading.Thread(target=wait_service_to_register, args=(), daemon=True)
         t.start()
 
     def __post_fork(self, server, worker):
