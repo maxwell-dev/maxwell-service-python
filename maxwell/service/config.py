@@ -49,7 +49,7 @@ class Config:
     def get_master_endpoints(self):
         master_endpoints = self.__server_config.get("master_endpoints")
         if master_endpoints is None:
-            raise "Please specify master_endpoints in server.toml"
+            raise "Please specify master_endpoints in service.toml"
         else:
             return master_endpoints
 
