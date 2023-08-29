@@ -28,6 +28,7 @@ class Config:
         port = self.__server_config.get("port")
         if port is None:
             port = self.__get_unused_port()
+            self.__server_config["port"] = port
             self.__save_port_to_config_file(port)
         return port
 
