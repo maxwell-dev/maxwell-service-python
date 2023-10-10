@@ -6,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 class MasterClient(object):
+    __instance = None
+
     # ===========================================
     # apis
     # ===========================================
@@ -22,6 +24,12 @@ class MasterClient(object):
     def __del__(self):
         self.close()
 
+    @staticmethod
+    def singleton(endpoints, options, loop):
+        if MasterClient.__instance == None:
+            MasterClient.__instance = MasterClient(endpoints, options, loop)
+        return MasterClient.__instance
+
     def close(self):
         self.__connection.close()
         self.__connection = None
@@ -31,15 +39,6 @@ class MasterClient(object):
 
     def delete_connection_listener(self, event, callback):
         self.__connection.delete_listener(event, callback)
-
-    async def pick_frontend(self):
-        pick_frontend_req = protocol_types.pick_frontend_req_t()
-        return await self.request(pick_frontend_req)
-
-    async def locate_topic(self, topic):
-        locate_topic_req = protocol_types.locate_topic_req_t()
-        locate_topic_req.topic = topic
-        return await self.request(locate_topic_req)
 
     async def request(self, msg):
         await self.__connection.wait_open()

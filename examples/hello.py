@@ -46,6 +46,7 @@ async def run_publisher_coro(loop):
             logger.error("Failed to publish: %s", traceback.format_exc())
 
         await asyncio.sleep(1)
+    # pass
 
 
 def run_publisher(loop):
@@ -53,7 +54,7 @@ def run_publisher(loop):
 
 
 if __name__ == "__main__":
-    # loop = asyncio.new_event_loop()
-    # t = threading.Thread(target=run_publisher, args=(loop,), daemon=True)
-    # t.start()
+    loop = asyncio.new_event_loop()
+    t = threading.Thread(target=run_publisher, args=(loop,), daemon=True)
+    t.start()
     Server(service.register()).run()

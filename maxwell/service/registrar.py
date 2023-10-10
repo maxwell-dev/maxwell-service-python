@@ -20,8 +20,8 @@ class Registrar(object):
 
         self.__master_client = None
         self.__running = True
-        self.__should_report_event = asyncio.Event()
-        self.__should_report_event.clear()
+        self.__should_register_event = asyncio.Event()
+        self.__should_register_event.clear()
 
     def start(self):
         t = threading.Thread(target=self.__run_loop, args=(), daemon=True)
@@ -30,13 +30,13 @@ class Registrar(object):
 
     def stop(self):
         self.__running = False
-        self.__should_report_event.clear()
+        self.__should_register_event.clear()
 
     def __run_loop(self):
-        self.__loop.run_until_complete(self.__repeat_report())
+        self.__loop.run_until_complete(self.__repeat_register())
         logger.info("Registrar thread stopped.")
 
-    async def __repeat_report(self):
+    async def __repeat_register(self):
         paths = self.__queue.get()
         logger.info("Received paths from worker: %s", paths)
 
@@ -46,23 +46,26 @@ class Registrar(object):
             self.__loop,
         )
         self.__master_client.add_connection_listener(
-            event=Event.ON_CONNECTED, callback=self.__on_connected
+            event=Event.ON_CONNECTED, callback=self.__on_connected_to_master
         )
 
         while self.__running:
             try:
-                await self.__should_report_event.wait()
+                await self.__should_register_event.wait()
                 await self.__register_service()
                 await self.__set_routes(paths)
-                self.__should_report_event.clear()
+                self.__should_register_event.clear()
             except Exception:
                 logger.error("Failed to report: %s", traceback.format_exc())
                 await asyncio.sleep(1)
 
-        await self.__master_client.close()
+        self.__master_client.delete_connection_listener(
+            event=Event.ON_CONNECTED, callback=self.__on_connected_to_master
+        )
+        self.__master_client.close()
 
-    def __on_connected(self):
-        self.__should_report_event.set()
+    def __on_connected_to_master(self):
+        self.__should_register_event.set()
 
     async def __register_service(self):
         req = protocol_types.register_service_req_t()

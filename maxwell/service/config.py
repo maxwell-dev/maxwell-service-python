@@ -14,58 +14,85 @@ logger = logging.getLogger(__name__)
 class Config:
     __instance = None
 
+    # ===========================================
+    # apis
+    # ===========================================
+    def __init__(self):
+        self.__service_config = self.__build_service_config()
+        self.__log_config = self.__build_log_config()
+
     @staticmethod
     def singleton():
         if Config.__instance == None:
             Config.__instance = Config()
         return Config.__instance
 
-    def __init__(self):
-        self.__server_config = self.__build_server_config()
-        self.__log_config = self.__build_log_config()
-
     def get_port(self):
-        port = self.__server_config.get("port")
+        port = self.__service_config.get("port")
         if port is None:
             port = self.__get_unused_port()
-            self.__server_config["port"] = port
+            self.__service_config["port"] = port
             self.__save_port_to_config_file(port)
         return port
 
     def get_workers(self):
-        workers = self.__server_config.get("workers")
+        workers = self.__service_config.get("workers")
         if workers is None or workers == -1:
             return multiprocessing.cpu_count() * 2 + 1
         else:
             return workers
 
     def get_proc_name(self):
-        proc_name = self.__server_config.get("proc_name")
+        proc_name = self.__service_config.get("proc_name")
         if proc_name is None:
-            return "maxwell-server-python"
+            return "maxwell-service-python"
         else:
             return proc_name
 
     def get_master_endpoints(self):
-        master_endpoints = self.__server_config.get("master_endpoints")
+        master_endpoints = self.__service_config.get("master_endpoints")
         if master_endpoints is None:
             raise "Please specify master_endpoints in service.toml"
         else:
             return master_endpoints
 
+    def get_connection_slot_size(self):
+        connection_slot_size = self.__service_config.get("connection_slot_size")
+        if connection_slot_size is None:
+            return 8
+        else:
+            return connection_slot_size
+
+    def get_endpoint_cache_size(self):
+        endpoint_cache_size = self.__service_config.get("endpoint_cache_size")
+        if endpoint_cache_size is None:
+            return 20480
+        else:
+            return endpoint_cache_size
+
+    def get_endpoint_cache_ttl(self):
+        endpoint_cache_ttl = self.__service_config.get("endpoint_cache_ttl")
+        if endpoint_cache_ttl is None:
+            return 60 * 60 * 24
+        else:
+            return endpoint_cache_ttl
+
     def get_log_config(self):
         return self.__log_config
 
-    def __build_server_config(self):
-        config_path = self.__get_server_config_file()
+    # ===========================================
+    # private methods
+    # ===========================================
+    def __build_service_config(self):
+        config_path = self.__get_service_config_file()
         if os.path.exists(config_path):
             with open(config_path, "rb") as f:
                 return tomli.load(f)
         else:
             return {}
 
-    def __get_server_config_file(self):
-        specified_config_file = os.getenv("SERVER_CFG_FILE", None)
+    def __get_service_config_file(self):
+        specified_config_file = os.getenv("SERVICE_CFG_FILE", None)
         if specified_config_file:
             config_file = specified_config_file
         else:
@@ -118,7 +145,7 @@ class Config:
 
     def __save_port_to_config_file(self, port):
         try:
-            config_path = self.__get_server_config_file()
+            config_path = self.__get_service_config_file()
             append_string = f"port = {port}\n"
             with open(config_path, "r+") as file:
                 content = file.read()

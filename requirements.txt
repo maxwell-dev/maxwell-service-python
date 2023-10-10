@@ -48,7 +48,7 @@ jinja2==3.1.2
     # via fastapi
 markupsafe==2.1.2
     # via jinja2
-maxwell-protocol==0.6.5
+maxwell-protocol==0.6.6
     # via maxwell-service (setup.py)
 orjson==3.8.5
     # via fastapi

@@ -27,6 +27,7 @@ class Publisher(object):
         for connections in self.__connections.values():
             for connection in connections:
                 connection.close()
+        self.__topic_locatlizer.close()
 
     async def publish(self, topic, value):
         connection = await self.__get_connetion(topic)
@@ -40,12 +41,13 @@ class Publisher(object):
     async def __get_connetion(self, topic):
         endpoint = await self.__topic_locatlizer.locate(topic)
         connections = self.__connections.get(endpoint)
+        size = Config.singleton().get_connection_slot_size()
         if connections is None:
             connections = []
-            for _ in range(3):
+            for _ in range(size):
                 connections.append(Connection(endpoint, self.__options, self.__loop))
             self.__connections[endpoint] = connections
-        return connections[random.randint(0, 2)]
+        return connections[random.randint(0, size - 1)]
 
     def __build_publish_req(self, topic, value):
         push_req = protocol_types.push_req_t()
