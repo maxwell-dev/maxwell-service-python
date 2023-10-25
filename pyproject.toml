@@ -14,7 +14,7 @@ dependencies = [
   "gunicorn[setproctitle] >= 21.2.0",
   "tomli == 2.0.1",
   "async-lru == 2.0.4",
-  "maxwell-protocol == 0.6.6",
+  "maxwell-protocol == 0.7.0",
 ]
 description = "The maxwell service implementation for python."
 license = {file = "LICENSE"}

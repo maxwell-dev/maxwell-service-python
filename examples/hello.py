@@ -39,9 +39,8 @@ async def run_publisher_coro(loop):
     publisher = Publisher(options={}, loop=loop)
     while True:
         try:
-            logger.error("publishing a message!!!")
-            await publisher.publish("topic_3", b"hello world")
-            logger.error("published.")
+            rep = await publisher.publish("topic_1", b"hello world")
+            logger.info("***published: %s", rep)
         except Exception:
             logger.error("Failed to publish: %s", traceback.format_exc())
 

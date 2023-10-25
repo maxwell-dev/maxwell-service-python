@@ -77,6 +77,15 @@ class Config:
         else:
             return endpoint_cache_ttl
 
+    def get_max_continuous_disconnected_times(self):
+        max_continuous_disconnected_times = self.__service_config.get(
+            "max_continuous_disconnected_times"
+        )
+        if max_continuous_disconnected_times is None:
+            return 30
+        else:
+            return max_continuous_disconnected_times
+
     def get_log_config(self):
         return self.__log_config
 

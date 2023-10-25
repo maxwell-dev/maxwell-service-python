@@ -64,17 +64,17 @@ class Registrar(object):
         )
         self.__master_client.close()
 
-    def __on_connected_to_master(self):
+    def __on_connected_to_master(self, _):
         self.__should_register_event.set()
 
     async def __register_service(self):
         req = protocol_types.register_service_req_t()
         req.http_port = Config.singleton().get_port()
         _ = await self.__master_client.request(req)
-        logger.info("Registered service successfully!")
+        logger.info("Successfully to registered service!")
 
     async def __set_routes(self, paths):
         req = protocol_types.set_routes_req_t()
         req.paths.extend(paths)
         _ = await self.__master_client.request(req)
-        logger.info("Set routes successfully!")
+        logger.info("successfully to set routes!")

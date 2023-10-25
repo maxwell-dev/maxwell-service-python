@@ -62,6 +62,15 @@ class Listenable(object):
                 logger.error("Failed to notify: %s", traceback.format_exc())
 
 
+class MaxwellError(Exception):
+    def __init__(self, code, desc):
+        self.code = code
+        self.desc = desc
+
+    def __str__(self):
+        return f"Maxwell error: code: {self.code}, desc: {self.desc}"
+
+
 class Connection(Listenable):
     # ===========================================
     # apis
@@ -117,6 +126,9 @@ class Connection(Listenable):
 
     def is_open(self):
         return self.__websocket != None and self.__websocket.open == True
+
+    def get_endpoint(self):
+        return self.__curr_endpoint
 
     # ===========================================
     # tasks
@@ -246,7 +258,7 @@ class Connection(Listenable):
                 msg.__class__ == protocol_types.error_rep_t
                 or msg.__class__ == protocol_types.error2_rep_t
             ):
-                request_future.set_exception(Exception(msg.code, msg.desc))
+                request_future.set_exception(MaxwellError(msg.code, msg.desc))
             else:
                 request_future.set_result(msg)
         except Exception:
@@ -258,19 +270,19 @@ class Connection(Listenable):
     # ===========================================
     def __on_connecting(self):
         logger.info("Connecting to endpoint: %s", self.__curr_endpoint)
-        self.notify(Event.ON_CONNECTING)
+        self.notify(Event.ON_CONNECTING, self)
 
     def __on_connected(self):
         logger.info("Connected to endpoint: %s", self.__curr_endpoint)
-        self.notify(Event.ON_CONNECTED)
+        self.notify(Event.ON_CONNECTED, self)
 
     def __on_disconnecting(self):
         logger.info("Disconnecting from endpoint: %s", self.__curr_endpoint)
-        self.notify(Event.ON_DISCONNECTING)
+        self.notify(Event.ON_DISCONNECTING, self)
 
     def __on_disconnected(self):
         logger.info("Disconnected from endpoint: %s", self.__curr_endpoint)
-        self.notify(Event.ON_DISCONNECTED)
+        self.notify(Event.ON_DISCONNECTED, self)
 
     def __on_error(self, code):
         logger.error("Error occured: %s", code)

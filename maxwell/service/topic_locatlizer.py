@@ -49,7 +49,7 @@ class TopicLocatlizer(object):
     # ===========================================
     # private methods
     # ===========================================
-    def __on_connected_to_master(self):
+    def __on_connected_to_master(self, _):
         self.__loop.create_task(self.__check())
 
     async def __check(self):
