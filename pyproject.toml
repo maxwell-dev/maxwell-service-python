@@ -21,7 +21,7 @@ license = {file = "LICENSE"}
 name = "maxwell-service"
 readme = "README.md"
 requires-python = ">=3.7"
-version = "0.6.15"
+version = "0.6.16"
 
 [tool.pytest.ini_options]
 log_cli = true

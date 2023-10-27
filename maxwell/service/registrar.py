@@ -71,7 +71,7 @@ class Registrar(object):
         req = protocol_types.register_service_req_t()
         req.http_port = Config.singleton().get_port()
         _ = await self.__master_client.request(req)
-        logger.info("Successfully to registered service!")
+        logger.info("Successfully to register service!")
 
     async def __set_routes(self, paths):
         req = protocol_types.set_routes_req_t()
