@@ -1,10 +1,10 @@
+import asyncio
 import random
 import logging
-import traceback
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
+from maxwell.utils.connection import Connection, Event
 
 from .config import Config
-from .connection import Connection, Code, Event, MaxwellError
 from .topic_locatlizer import TopicLocatlizer
 
 logger = logging.getLogger(__name__)
@@ -23,13 +23,13 @@ class Publisher(object):
         self.__continuous_disconnected_times = 0
 
     def __del__(self):
-        self.close()
+        asyncio.ensure_future(self.close())
 
-    def close(self):
+    async def close(self):
         for connections in self.__connections.values():
             for connection in connections:
-                connection.close()
-        self.__topic_locatlizer.close()
+                await connection.close()
+        await self.__topic_locatlizer.close()
 
     async def publish(self, topic, value):
         try:
@@ -37,14 +37,11 @@ class Publisher(object):
             await connection.wait_open()
             return await connection.request(self.__build_publish_req(topic, value))
         except Exception as e:
-            logger.error(
-                "Failed to publish: msg: %s, trace: %s", e, traceback.format_exc()
-            )
+            logger.error("Failed to publish: topic: %s, error: %s", topic, e)
 
     # ===========================================
     # internal functions
     # ===========================================
-
     async def __get_connetion(self, topic):
         endpoint = await self.__topic_locatlizer.locate(topic)
         connections = self.__connections.get(endpoint)
@@ -52,7 +49,9 @@ class Publisher(object):
         if connections is None:
             connections = []
             for _ in range(size):
-                connection = Connection(endpoint, self.__options, self.__loop)
+                connection = Connection(
+                    endpoint=endpoint, options=self.__options, loop=self.__loop
+                )
                 connection.add_listener(
                     event=Event.ON_DISCONNECTED,
                     callback=self.__on_disconnected_to_backend,

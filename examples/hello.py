@@ -2,7 +2,6 @@ import asyncio
 import logging
 import json
 import threading
-import traceback
 
 from maxwell.service.server import Server
 from maxwell.service.service import Service
@@ -10,6 +9,18 @@ from maxwell.service.publisher import Publisher
 
 logger = logging.getLogger(__name__)
 service = Service()
+
+
+@service.ws("/hello")
+async def hello(req):
+    logger.debug(" %s ", req)
+    return json.dumps("world")
+
+
+@service.ws("/get_candles")
+async def hello(req):
+    logger.debug(" %s ", req)
+    return json.dumps(build_candles())
 
 
 def build_candles():
@@ -28,16 +39,8 @@ def build_candles():
     return candles
 
 
-@service.ws("/hello")
-async def hello(req):
-    logger.debug(" %s ", req)
-    return json.dumps("world")
-
-
-@service.ws("/get_candles")
-async def hello(req):
-    logger.debug(" %s ", req)
-    return json.dumps(build_candles())
+def run_publisher(loop):
+    loop.run_until_complete(run_publisher_coro(loop))
 
 
 async def run_publisher_coro(loop):
@@ -46,15 +49,10 @@ async def run_publisher_coro(loop):
         try:
             rep = await publisher.publish("topic_1", b"hello world")
             logger.info("***published: %s", rep)
-        except Exception:
-            logger.error("Failed to publish: %s", traceback.format_exc())
+        except Exception as e:
+            logger.error("Failed to publish: %s", e)
 
         await asyncio.sleep(1)
-    # pass
-
-
-def run_publisher(loop):
-    loop.run_until_complete(run_publisher_coro(loop))
 
 
 if __name__ == "__main__":

@@ -56,8 +56,8 @@ class Service(FastAPI):
                 while True:
                     data = await websocket.receive_bytes()
                     asyncio.ensure_future(self.__handle_msg(websocket, data))
-            except WebSocketDisconnect:
-                logger.warning("Connection was closed.")
+            except WebSocketDisconnect as e:
+                logger.warning("Connection was closed: %s", e)
 
     async def __handle_msg(self, websocket, data):
         try:
@@ -88,5 +88,5 @@ class Service(FastAPI):
                 await websocket.send_bytes(protocol.encode_msg(rep))
             else:
                 logger.error("Received unknown msg: %s", req)
-        except Exception:
-            logger.warning("Failed to handle msg: %s", req)
+        except Exception as e:
+            logger.warning("Failed to handle msg: %s, error: %s", req, e)

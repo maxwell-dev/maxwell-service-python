@@ -1,8 +1,10 @@
+import asyncio
 import logging
-import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 from async_lru import alru_cache
+import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
+from maxwell.utils.connection import Event
+
 from .config import Config
-from .connection import Event
 from .master_client import MasterClient
 
 logger = logging.getLogger(__name__)
@@ -26,15 +28,15 @@ class TopicLocatlizer(object):
         )
 
     def __del__(self):
-        self.close()
+        asyncio.ensure_future(self.close())
 
-    def close(self):
+    async def close(self):
         self.__master_client.delete_connection_listener(
             Event.ON_CONNECTED, self.__on_connected_to_master
         )
-        self.__master_client.close()
+        await self.__master_client.close()
         self.locate.cache_clear()
-        self.locate.cache_close()
+        await self.locate.cache_close()
 
     @alru_cache(
         maxsize=Config.singleton().get_endpoint_cache_size(),
@@ -47,16 +49,21 @@ class TopicLocatlizer(object):
         return rep.endpoint
 
     # ===========================================
-    # private methods
+    # internal functions
     # ===========================================
-    def __on_connected_to_master(self, _):
+    def __on_connected_to_master(self, *argv, **kwargs):
         self.__loop.create_task(self.__check())
 
     async def __check(self):
         req = protocol_types.get_topic_dist_checksum_req_t()
         logger.info("Getting TopicDistChecksum: req: %s", req)
-        rep = await self.__master_client.request(req)
-        logger.info("Successfully to get TopicDistChecksum: rep: %s", rep)
+        try:
+            rep = await self.__master_client.request(req)
+            logger.info("Successfully to get TopicDistChecksum: rep: %s", rep)
+        except Exception as e:
+            logger.error("Failed to get TopicDistChecksum: %s", e)
+            return
+
         if self.__checksum != rep.checksum:
             logger.info(
                 "TopicDistChecksum has changed: local: %s, remote: %s, clear cache...",
@@ -67,7 +74,7 @@ class TopicLocatlizer(object):
             self.locate.cache_clear()
         else:
             logger.info(
-                "TopicDistChecksum stays the same: local: %s, remote: %s, do noghing.",
+                "TopicDistChecksum stays the same: local: %s, remote: %s, do nothing.",
                 self.__checksum,
                 rep.checksum,
             )

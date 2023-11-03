@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import threading
 import gunicorn.app.base
@@ -86,10 +85,8 @@ class Server(gunicorn.app.base.BaseApplication):
         if self.__registrar is None:
             self.__registrar = Registrar(queue=self.__queue)
             self.__registrar.start()
-        pass
 
     def __on_exit(self, server):
         logger.info("[N] Server exit: server: %s", server)
         if self.__registrar is not None:
             self.__registrar.stop()
-        pass

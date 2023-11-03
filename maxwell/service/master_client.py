@@ -1,6 +1,6 @@
 import logging
-import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
-from .connection import Connection
+import asyncio
+from maxwell.utils.connection import MultiAltEndpointsConnection, Event
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +17,14 @@ class MasterClient(object):
         self.__loop = loop
 
         self.__endpoint_index = -1
-        self.__connection = Connection(
-            endpoint=self.__next_endpoint, options=self.__options, loop=self.__loop
+        self.__connection = MultiAltEndpointsConnection(
+            pick_endpoint=self.__pick_endpoint,
+            options=self.__options,
+            loop=self.__loop,
         )
 
     def __del__(self):
-        self.close()
+        asyncio.ensure_future(self.close())
 
     @staticmethod
     def singleton(endpoints, options, loop):
@@ -30,8 +32,8 @@ class MasterClient(object):
             MasterClient.__instance = MasterClient(endpoints, options, loop)
         return MasterClient.__instance
 
-    def close(self):
-        self.__connection.close()
+    async def close(self):
+        await self.__connection.close()
         self.__connection = None
 
     def add_connection_listener(self, event, callback):
@@ -47,7 +49,7 @@ class MasterClient(object):
     # ===========================================
     # internal functions
     # ===========================================
-    def __next_endpoint(self):
+    async def __pick_endpoint(self):
         self.__endpoint_index += 1
         if self.__endpoint_index >= len(self.__endpoints):
             self.__endpoint_index = 0

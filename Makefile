@@ -50,8 +50,8 @@ publish-test:
 
 clean:
 	rm -rf $(venv-dir) 
-	rm -rf $(prj-dir)/build $(prj-dir)/dist ${prj-dir}/maxwell/maxwell_server.egg-info
+	rm -rf $(prj-dir)/build $(prj-dir)/dist ${prj-dir}/maxwell/maxwell_service.egg-info
 	rm -rf $(prj-dir)/examples/__pycache__ 
-	rm -rf $(prj-dir)/maxwell/__pycache__ $(prj-dir)/maxwell/server/__pycache__
+	rm -rf $(prj-dir)/maxwell/__pycache__ $(prj-dir)/maxwell/service/__pycache__
 	rm -rf $(prj-dir)/test/__pycache__
 	rm -rf $(prj-dir)/.pytest_cache

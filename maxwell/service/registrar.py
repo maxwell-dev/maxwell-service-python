@@ -1,9 +1,9 @@
 import asyncio
 import logging
 import threading
-import traceback
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
-from .connection import Event
+from maxwell.utils.connection import Event
+
 from .config import Config
 from .master_client import MasterClient
 
@@ -18,7 +18,6 @@ class Registrar(object):
         self.__queue = queue
         self.__loop = loop if loop else asyncio.new_event_loop()
 
-        self.__master_client = None
         self.__running = True
         self.__should_register_event = asyncio.Event()
         self.__should_register_event.clear()
@@ -32,6 +31,9 @@ class Registrar(object):
         self.__running = False
         self.__should_register_event.clear()
 
+    # ===========================================
+    # internal functions
+    # ===========================================
     def __run_loop(self):
         self.__loop.run_until_complete(self.__repeat_register())
         logger.info("Registrar thread stopped.")
@@ -40,41 +42,49 @@ class Registrar(object):
         paths = self.__queue.get()
         logger.info("Received paths from worker: %s", paths)
 
-        self.__master_client = MasterClient(
+        master_client = MasterClient(
             Config.singleton().get_master_endpoints(),
             {"reconnect_delay": 1, "ping_interval": 10},
             self.__loop,
         )
-        self.__master_client.add_connection_listener(
+        master_client.add_connection_listener(
             event=Event.ON_CONNECTED, callback=self.__on_connected_to_master
         )
 
         while self.__running:
             try:
                 await self.__should_register_event.wait()
-                await self.__register_service()
-                await self.__set_routes(paths)
+                await self.__register_service(master_client)
+                await self.__set_routes(paths, master_client)
                 self.__should_register_event.clear()
-            except Exception:
-                logger.error("Failed to report: %s", traceback.format_exc())
+            except Exception as e:
+                logger.error("Failed to register: %s", e)
                 await asyncio.sleep(1)
 
-        self.__master_client.delete_connection_listener(
+        master_client.delete_connection_listener(
             event=Event.ON_CONNECTED, callback=self.__on_connected_to_master
         )
-        self.__master_client.close()
+        await master_client.close()
 
-    def __on_connected_to_master(self, _):
+    def __on_connected_to_master(self, *argv, **kwargs):
         self.__should_register_event.set()
 
-    async def __register_service(self):
+    async def __register_service(self, master_client):
         req = protocol_types.register_service_req_t()
         req.http_port = Config.singleton().get_port()
-        _ = await self.__master_client.request(req)
-        logger.info("Successfully to register service!")
+        try:
+            rep = await master_client.request(req)
+            logger.info("Successfully to register service: %s", rep)
+        except Exception as e:
+            logger.error("Failed to register service: %s", e)
+            raise e
 
-    async def __set_routes(self, paths):
+    async def __set_routes(self, paths, master_client):
         req = protocol_types.set_routes_req_t()
         req.paths.extend(paths)
-        _ = await self.__master_client.request(req)
-        logger.info("successfully to set routes!")
+        try:
+            rep = await master_client.request(req)
+            logger.info("successfully to set routes: %s", rep)
+        except Exception as e:
+            logger.error("Failed to set routes: %s", e)
+            raise e

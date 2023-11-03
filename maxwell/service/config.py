@@ -2,7 +2,6 @@ import multiprocessing
 import os
 import re
 import socket
-import traceback
 import logging
 import json
 import tomli
@@ -90,7 +89,7 @@ class Config:
         return self.__log_config
 
     # ===========================================
-    # private methods
+    # internal functions
     # ===========================================
     def __build_service_config(self):
         config_path = self.__get_service_config_file()
@@ -147,10 +146,10 @@ class Config:
                     s.bind(("localhost", 0))
                     _, port = s.getsockname()
                     return port
-            except Exception:
-                logger.warning("Error occurred: %s", traceback.format_exc())
+            except Exception as e:
+                logger.warning("Error occurred: %s", e)
                 attempt -= 1
-        raise ValueError("Cannot find unused port")
+        raise LookupError("Failed to find unused port.")
 
     def __save_port_to_config_file(self, port):
         try:
@@ -163,5 +162,5 @@ class Config:
                     logger.info(f"Writed new port: %s", port)
                 else:
                     logger.info(f"Ignored, as port already exists: %s", port)
-        except Exception:
-            logger.warning("Error occurred: %s", traceback.format_exc())
+        except Exception as e:
+            logger.warning("Error occurred: %s", e)
