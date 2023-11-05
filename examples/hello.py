@@ -1,13 +1,12 @@
 import asyncio
-import logging
 import json
 import threading
-
+from maxwell.utils.logger import get_logger
 from maxwell.service.server import Server
 from maxwell.service.service import Service
 from maxwell.service.publisher import Publisher
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 service = Service()
 
 

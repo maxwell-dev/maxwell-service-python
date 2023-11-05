@@ -1,13 +1,13 @@
 import asyncio
-import logging
 import threading
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 from maxwell.utils.connection import Event
+from maxwell.utils.logger import get_logger
 
 from .config import Config
 from .master_client import MasterClient
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class Registrar(object):

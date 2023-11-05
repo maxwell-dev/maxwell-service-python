@@ -2,12 +2,12 @@ import multiprocessing
 import os
 import re
 import socket
-import logging
 import json
 import tomli
 from distutils.sysconfig import get_python_lib
+from maxwell.utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class Config:

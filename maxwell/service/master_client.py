@@ -1,8 +1,5 @@
-import logging
 import asyncio
-from maxwell.utils.connection import MultiAltEndpointsConnection, Event
-
-logger = logging.getLogger(__name__)
+from maxwell.utils.connection import MultiAltEndpointsConnection
 
 
 class MasterClient(object):

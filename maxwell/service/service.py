@@ -1,15 +1,14 @@
 import asyncio
-import logging
 import functools
 import inspect
+import traceback
 from typing import Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from maxwell.utils.logger import get_logger
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 import maxwell.protocol.maxwell_protocol as protocol
 
-from maxwell.service.registrar import Registrar
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class Service(FastAPI):
@@ -88,5 +87,7 @@ class Service(FastAPI):
                 await websocket.send_bytes(protocol.encode_msg(rep))
             else:
                 logger.error("Received unknown msg: %s", req)
-        except Exception as e:
-            logger.warning("Failed to handle msg: %s, error: %s", req, e)
+        except Exception:
+            logger.error(
+                "Failed to handle msg: %s, error: %s", req, traceback.format_exc()
+            )

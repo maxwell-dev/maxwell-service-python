@@ -1,13 +1,13 @@
 import asyncio
 import random
-import logging
-import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 from maxwell.utils.connection import Connection, Event
+from maxwell.utils.logger import get_logger
+import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 
 from .config import Config
 from .topic_locatlizer import TopicLocatlizer
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class Publisher(object):

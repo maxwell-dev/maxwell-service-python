@@ -1,15 +1,15 @@
-import logging
 import threading
-import gunicorn.app.base
-from multiprocessing import Queue, Value
-from ctypes import c_bool
 import time
+import gunicorn.app.base
+from ctypes import c_bool
+from multiprocessing import Queue, Value
+from maxwell.utils.logger import get_logger
 
 from .config import Config
 from .hooks import Hooks
 from .registrar import Registrar
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class Server(gunicorn.app.base.BaseApplication):
