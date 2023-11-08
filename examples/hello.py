@@ -3,21 +3,21 @@ import json
 import threading
 from maxwell.utils.logger import get_logger
 from maxwell.service.server import Server
-from maxwell.service.service import Service
+from maxwell.service.service import Service, Request, Reply
 from maxwell.service.publisher import Publisher
 
 logger = get_logger(__name__)
 service = Service()
 
 
-@service.ws("/hello")
-async def hello(req):
+@service.add_ws_route("/hello")
+async def hello(req: Request):
     logger.debug(" %s ", req)
-    return json.dumps("world")
+    return Reply(payload="python")
 
 
 @service.ws("/get_candles")
-async def hello(req):
+async def get_candles(req):
     logger.debug(" %s ", req)
     return json.dumps(build_candles())
 
