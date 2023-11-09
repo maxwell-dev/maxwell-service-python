@@ -13,7 +13,7 @@ service = Service()
 @service.add_ws_route("/hello")
 async def hello(req: Request):
     logger.debug(" %s ", req)
-    return Reply(payload="python")
+    return Reply(payload="world")
 
 
 @service.ws("/get_candles")
