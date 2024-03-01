@@ -20,9 +20,6 @@ class MasterClient(object):
             loop=self.__loop,
         )
 
-    def __del__(self):
-        asyncio.ensure_future(self.close())
-
     @staticmethod
     def singleton(endpoints, options, loop):
         if MasterClient.__instance == None:

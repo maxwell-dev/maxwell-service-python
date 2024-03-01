@@ -27,9 +27,6 @@ class TopicLocatlizer(object):
             Event.ON_CONNECTED, self.__on_connected_to_master
         )
 
-    def __del__(self):
-        asyncio.ensure_future(self.close())
-
     async def close(self):
         self.__master_client.delete_connection_listener(
             Event.ON_CONNECTED, self.__on_connected_to_master

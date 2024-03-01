@@ -1,10 +1,9 @@
-import multiprocessing
 import os
 import re
 import socket
 import json
 import tomli
-from distutils.sysconfig import get_python_lib
+import sysconfig
 from maxwell.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -34,12 +33,12 @@ class Config:
             self.__save_port_to_config_file(port)
         return port
 
-    def get_workers(self):
-        workers = self.__service_config.get("workers")
-        if workers is None or workers == -1:
-            return multiprocessing.cpu_count() * 2 + 1
+    def get_set_routes_delay(self):
+        set_routes_delay = self.__service_config.get("set_routes_delay")
+        if set_routes_delay is None or set_routes_delay < 0:
+            return 2
         else:
-            return workers
+            return set_routes_delay
 
     def get_proc_name(self):
         proc_name = self.__service_config.get("proc_name")
@@ -130,7 +129,7 @@ class Config:
 
     def __get_root_dir(self):
         root_dir = os.path.abspath(
-            os.path.join(get_python_lib(), "..", "..", "..", "..")
+            os.path.join(sysconfig.get_path("purelib"), "..", "..", "..", "..")
         )
         return root_dir
 

@@ -1,92 +1,46 @@
-import threading
-import time
-import gunicorn.app.base
-from ctypes import c_bool
-from multiprocessing import Queue, Value
+import argparse
+import sys
+import setproctitle
+import uvicorn
 from maxwell.utils.logger import get_logger
 
 from .config import Config
-from .hooks import Hooks
 from .registrar import Registrar
 
 logger = get_logger(__name__)
 
 
-class Server(gunicorn.app.base.BaseApplication):
-    def __init__(self, service, hooks=None):
-        config = Config.singleton()
-        hooks = hooks or Hooks()
+class Server(object):
+    def __init__(self, service_ref):
+        self.__service_ref = service_ref
+        [module_name, service_name] = service_ref.split(":")
+        service = getattr(sys.modules[module_name], service_name)
+        self.__registrar = Registrar(service)
 
-        self.options = {
-            "bind": ["0.0.0.0:{}".format(config.get_port())],
-            "workers": config.get_workers(),
-            "proc_name": config.get_proc_name(),
-            "logconfig_dict": config.get_log_config(),
-            "worker_class": "maxwell.service.worker.Worker",
-            "proxy_allow_ips": "*",
-            "post_worker_init": self.__post_worker_init,
-            "post_fork": self.__post_fork,
-            "worker_exit": self.__worker_exit,
-            "when_ready": self.__when_ready,
-            "on_exit": self.__on_exit,
-        }
-        self.application = service
-        super().__init__()
+    def run(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "--reload", action="store_true", help="Reload service on file changes."
+        )
+        args = vars(parser.parse_args())
 
-        self.__service = service
-        self.__hooks = hooks
-        self.__queue = Queue()
-        self.__is_first_registered_service = Value(c_bool, True)
-        self.__registrar = None
+        setproctitle.setproctitle(Config.singleton().get_proc_name())
 
-    def load_config(self):
-        config = {
-            key: value
-            for key, value in self.options.items()
-            if key in self.cfg.settings and value is not None
-        }
-        for key, value in config.items():
-            self.cfg.set(key.lower(), value)
-
-    def load(self):
-        return self.application
-
-    def __post_worker_init(self, worker):
-        def wait_service_to_register():
-            while True:
-                if self.__service.is_registered():
-                    logger.info("[2] post_service_init: worker: %s", worker)
-                    self.__hooks.post_service_init(worker)
-
-                    with self.__is_first_registered_service.get_lock():
-                        if self.__is_first_registered_service.value is True:
-                            self.__is_first_registered_service.value = False
-                            paths = self.__service.get_paths()
-                            logger.info("Sending paths to registrar: %s", paths)
-                            self.__queue.put(paths)
-
-                    break
-
-                time.sleep(0.1)
-
-        t = threading.Thread(target=wait_service_to_register, args=(), daemon=True)
-        t.start()
-
-    def __post_fork(self, server, worker):
-        logger.info("[1] post_worker_fork: server: %s, worker: %s", server, worker)
-        self.__hooks.post_worker_fork(server, worker)
-
-    def __worker_exit(self, server, worker):
-        logger.info("[3] post_worker_exit: server: %s, worker: %s", server, worker)
-        self.__hooks.post_worker_exit(server, worker)
-
-    def __when_ready(self, server):
-        logger.info("[0] Server started: server: %s", server)
-        if self.__registrar is None:
-            self.__registrar = Registrar(queue=self.__queue)
-            self.__registrar.start()
-
-    def __on_exit(self, server):
-        logger.info("[N] Server exit: server: %s", server)
-        if self.__registrar is not None:
-            self.__registrar.stop()
+        self.__registrar.start()
+        uvicorn.run(
+            self.__service_ref,
+            host="0.0.0.0",
+            port=Config.singleton().get_port(),
+            loop="uvloop",
+            http="httptools",
+            ws="websockets",
+            ws_max_size=134217728,
+            ws_ping_interval=None,
+            ws_ping_timeout=None,
+            lifespan="on",
+            interface="asgi3",
+            log_level="info",
+            reload=args["reload"],
+            log_config=Config.singleton().get_log_config(),
+        )
+        self.__registrar.stop()

@@ -1,4 +1,5 @@
 import asyncio
+from enum import Enum
 import functools
 import inspect
 import json
@@ -12,10 +13,16 @@ import maxwell.protocol.maxwell_protocol as protocol
 logger = get_logger(__name__)
 
 
-Request: TypeAlias = protocol_types.req_req_t
+class Change(Enum):
+    ADD = 1
 
-V0 = 0
-V1 = 1
+
+class Version(Enum):
+    V0 = 0
+    V1 = 1
+
+
+Request: TypeAlias = protocol_types.req_req_t
 
 
 class Reply:
@@ -28,19 +35,13 @@ class Reply:
 class Service(FastAPI):
     def __init__(self, *args: Any, **kwargs: Any):
         super(Service, self).__init__(*args, **kwargs)
-        self.__is_registered = False
         self.__ws_routes = {}
+        self.__on_routes_change_callback = lambda *args, **kwargs: None
         self.__on_ws_msg()
 
-    def register(self):
-        if self.__is_registered is False:
-            self.__is_registered = True
-        return self
-
-    def is_registered(self):
-        return self.__is_registered
-
     def ws(self, path):
+        self.__on_routes_change_callback(Change.ADD, path)
+
         def decorator(func):
             @functools.wraps(func)
             def func_wrapper(*args, **kwargs):
@@ -50,13 +51,15 @@ class Service(FastAPI):
             self.__ws_routes[path] = [
                 func_wrapper,
                 inspect.iscoroutinefunction(func),
-                V0,
+                Version.V0,
             ]
             return func_wrapper
 
         return decorator
 
     def add_ws_route(self, path):
+        self.__on_routes_change_callback(Change.ADD, path)
+
         def decorator(func):
             @functools.wraps(func)
             def func_wrapper(*args, **kwargs):
@@ -66,7 +69,7 @@ class Service(FastAPI):
             self.__ws_routes[path] = [
                 func_wrapper,
                 inspect.iscoroutinefunction(func),
-                V1,
+                Version.V1,
             ]
             return func_wrapper
 
@@ -80,6 +83,9 @@ class Service(FastAPI):
 
     def get_handler(self, path):
         return self.__ws_routes.get(path)
+
+    def on_routes_change(self, callback):
+        self.__on_routes_change_callback = callback
 
     def __on_ws_msg(self):
         @self.websocket("/$ws")
@@ -104,7 +110,7 @@ class Service(FastAPI):
                 handler = self.get_handler(req.path)
                 if handler is not None:
                     handle, is_coroutine, version = handler
-                    if version == V1:
+                    if version == Version.V1:
                         if is_coroutine is True:
                             userland_rep: Reply = await handle(req)
                         else:
@@ -122,7 +128,7 @@ class Service(FastAPI):
                             rep.conn0_ref = req.conn0_ref
                             rep.ref = req.ref
                             await websocket.send_bytes(protocol.encode_msg(rep))
-                    elif version == V0:
+                    elif version == Version.V0:
                         rep = protocol_types.req_rep_t()
                         if is_coroutine is True:
                             rep.payload = await handle(req)

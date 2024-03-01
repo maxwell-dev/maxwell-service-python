@@ -22,9 +22,6 @@ class Publisher(object):
         self.__connections = {}  # endpoint => [connection0, connection1, ...]
         self.__continuous_disconnected_times = 0
 
-    def __del__(self):
-        asyncio.ensure_future(self.close())
-
     async def close(self):
         for connections in self.__connections.values():
             for connection in connections:
