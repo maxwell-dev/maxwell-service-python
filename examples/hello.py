@@ -10,10 +10,27 @@ logger = get_logger(__name__)
 service = Service()
 
 
-@service.add_ws_route("/hello")
-async def hello(req: Request):
-    logger.debug(" %s ", req)
-    return Reply(payload="world")
+def add_ws_route_later(loop):
+    loop.run_until_complete(add_ws_route_later_coro())
+
+
+async def add_ws_route_later_coro():
+    @service.add_ws_route("/hello")
+    async def hello(req: Request):
+        logger.debug(" %s ", req)
+        return Reply(payload="world")
+
+    @service.add_ws_route("/hello2")
+    async def hello2(req: Request):
+        logger.debug(" %s ", req)
+        return Reply(payload="world2")
+
+    await asyncio.sleep(1)
+
+    @service.add_ws_route("/hello3")
+    async def hello3(req: Request):
+        logger.debug(" %s ", req)
+        return Reply(payload="world3")
 
 
 @service.ws("/get_candles")
@@ -55,7 +72,15 @@ async def run_publisher_coro(loop):
 
 
 if __name__ == "__main__":
-    # loop = asyncio.new_event_loop()
-    # t = threading.Thread(target=run_publisher, args=(loop,), daemon=True)
-    # t.start()
+    loop = asyncio.new_event_loop()
+
+    t = threading.Thread(
+        target=add_ws_route_later,
+        args=(loop,),
+        daemon=True,
+    )
+    t.start()
+
+    # t2 = threading.Thread(target=run_publisher, args=(loop,), daemon=True)
+    # t2.start()
     Server(f"{__name__}:service").run()

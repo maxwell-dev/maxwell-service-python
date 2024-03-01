@@ -4,6 +4,7 @@ import functools
 import inspect
 import json
 import traceback
+import threading
 from typing import Any, TypeAlias
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from maxwell.utils.logger import get_logger
@@ -36,53 +37,55 @@ class Service(FastAPI):
     def __init__(self, *args: Any, **kwargs: Any):
         super(Service, self).__init__(*args, **kwargs)
         self.__ws_routes = {}
+        self.__ws_routes_lock = threading.Lock()
         self.__on_routes_change_callback = lambda *args, **kwargs: None
         self.__on_ws_msg()
 
     def ws(self, path):
-        self.__on_routes_change_callback(Change.ADD, path)
-
         def decorator(func):
             @functools.wraps(func)
             def func_wrapper(*args, **kwargs):
                 value = func(*args, **kwargs)
                 return value
 
-            self.__ws_routes[path] = [
-                func_wrapper,
-                inspect.iscoroutinefunction(func),
-                Version.V0,
-            ]
+            with self.__ws_routes_lock:
+                self.__ws_routes[path] = [
+                    func_wrapper,
+                    inspect.iscoroutinefunction(func),
+                    Version.V0,
+                ]
+                self.__on_routes_change_callback(Change.ADD, path)
+
             return func_wrapper
 
         return decorator
 
     def add_ws_route(self, path):
-        self.__on_routes_change_callback(Change.ADD, path)
-
         def decorator(func):
             @functools.wraps(func)
             def func_wrapper(*args, **kwargs):
                 value = func(*args, **kwargs)
                 return value
 
-            self.__ws_routes[path] = [
-                func_wrapper,
-                inspect.iscoroutinefunction(func),
-                Version.V1,
-            ]
+            with self.__ws_routes_lock:
+                self.__ws_routes[path] = [
+                    func_wrapper,
+                    inspect.iscoroutinefunction(func),
+                    Version.V1,
+                ]
+                self.__on_routes_change_callback(Change.ADD, path)
+
             return func_wrapper
 
         return decorator
 
     def get_ws_routes(self):
-        return self.__ws_routes
+        with self.__ws_routes_lock:
+            return self.__ws_routes
 
     def get_paths(self):
-        return list(self.__ws_routes.keys())
-
-    def get_handler(self, path):
-        return self.__ws_routes.get(path)
+        with self.__ws_routes_lock:
+            return list(self.__ws_routes.keys())
 
     def on_routes_change(self, callback):
         self.__on_routes_change_callback = callback
@@ -107,7 +110,7 @@ class Service(FastAPI):
             req = protocol.decode_msg(data)
             if req.__class__ == protocol_types.req_req_t:
                 logger.debug("Received msg: %s", req)
-                handler = self.get_handler(req.path)
+                handler = self.__ws_routes.get(req.path)
                 if handler is not None:
                     handle, is_coroutine, version = handler
                     if version == Version.V1:

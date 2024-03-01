@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 
 
 class Item(Enum):
-    NORMAL = 1
+    ROUTES = 1
     CANCEL = 2
 
 
@@ -38,7 +38,7 @@ class Registrar(Thread):
         self.__running = False
 
     def run(self):
-        logger.info("Registrar thread started.")
+        logger.info("Registrar thread starting...")
 
         # init
         self.__loop = asyncio.new_event_loop()
@@ -50,7 +50,7 @@ class Registrar(Thread):
         )
 
         # set routes change listener
-        self.__service.on_route_change = self.__put_routes_later
+        self.__service.on_routes_change(self.__put_routes_item_later)
 
         # add connection listeners
         self.__master_client.add_connection_listener(
@@ -81,25 +81,30 @@ class Registrar(Thread):
     # internal functions
     # ===========================================
 
-    def __put_routes_later(self, *argv, **kwargs):
+    def __put_routes_item_later(self, *argv, **kwargs):
+        logger.debug("Put routes item later: argv: %s, kwargs: %s", argv, kwargs)
         if self.__put_routes_timer:
             self.__put_routes_timer.cancel()
-        self.__put_routes_timer = self.__loop.call_later(
-            Config.singleton().get_set_routes_delay(), self.__try_put_routes
+        delay = kwargs.get("delay", Config.singleton().get_set_routes_delay())
+        self.__put_routes_timer = self.__loop.call_soon_threadsafe(
+            self.__loop.call_later, delay, self.__try_put_routes_item
         )
 
-    def __try_put_routes(self):
+    def __try_put_routes_item(self):
         paths = self.__service.get_paths()
         if len(paths) > 0:
-            self.__queue.put_nowait((Item.NORMAL, paths))
+            self.__queue.put_nowait((Item.ROUTES, paths))
+
+    def __put_cancel_item(self):
+        self.__queue.put_nowait((Item.CANCEL, None))
 
     def __on_connected_to_master(self, *argv, **kwargs):
         self.__open_event.set()
-        self.__try_put_routes()
+        self.__put_routes_item_later(delay=0)
 
     def __on_disconnected_from_master(self, *argv, **kwargs):
         self.__open_event.clear()
-        self.__queue.put_nowait((Item.CANCEL, None))
+        self.__put_cancel_item()
 
     async def __repeat_register_service_and_set_routes(self):
         while self.__running:
@@ -126,7 +131,7 @@ class Registrar(Thread):
             try:
                 type, paths = await self.__queue.get()
                 logger.info("Got item: type: %s, paths: %s", type, paths)
-                if type == Item.NORMAL:
+                if type == Item.ROUTES:
                     await self.__set_routes(paths)
                 elif type == Item.CANCEL:
                     return

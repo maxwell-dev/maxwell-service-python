@@ -4,4 +4,4 @@ endpoint_cache_ttl = 86400
 master_endpoints = ["localhost:8081"]
 port = 9091
 proc_name = "maxwell-service-python"
-set_routes_delay = 2
+set_routes_delay = 1
