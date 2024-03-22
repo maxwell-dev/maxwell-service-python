@@ -23,7 +23,7 @@ async def lifespan(service):
 
 service = Service(
     lifespan=lifespan,
-    # root_path="/maxwell-service-hello",
+    # root_path="/maxwell-service-python",
 )
 
 
