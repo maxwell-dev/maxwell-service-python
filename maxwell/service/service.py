@@ -5,7 +5,8 @@ import inspect
 import json
 import traceback
 import threading
-from typing import Any, TypeAlias
+import signal
+from typing import TypeAlias, override
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from maxwell.utils.logger import get_logger
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
@@ -34,12 +35,15 @@ class Reply:
 
 
 class Service(FastAPI):
-    def __init__(self, *args: Any, **kwargs: Any):
-        super(Service, self).__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.__ws_routes = {}
-        self.__ws_routes_lock = threading.Lock()
+        self.__routes_lock = threading.Lock()
         self.__on_routes_change_callback = lambda *args, **kwargs: None
-        self.__on_ws_msg()
+        self.__running = False
+
+        signal.signal(signal.SIGINT, self.__signal_handler)
+        self.__add_websocket_endpoint()
 
     def ws(self, path):
         def decorator(func):
@@ -48,7 +52,7 @@ class Service(FastAPI):
                 value = func(*args, **kwargs)
                 return value
 
-            with self.__ws_routes_lock:
+            with self.__routes_lock:
                 self.__ws_routes[path] = [
                     func_wrapper,
                     inspect.iscoroutinefunction(func),
@@ -67,7 +71,7 @@ class Service(FastAPI):
                 value = func(*args, **kwargs)
                 return value
 
-            with self.__ws_routes_lock:
+            with self.__routes_lock:
                 self.__ws_routes[path] = [
                     func_wrapper,
                     inspect.iscoroutinefunction(func),
@@ -79,23 +83,89 @@ class Service(FastAPI):
 
         return decorator
 
-    def get_ws_routes(self):
-        with self.__ws_routes_lock:
-            return self.__ws_routes
+    @override
+    def get(self, *args, **kwargs):
+        with self.__routes_lock:
+            get = super().get(*args, **kwargs)
+            self.__on_routes_change_callback(Change.ADD, *args, **kwargs)
+        return get
 
-    def get_paths(self):
-        with self.__ws_routes_lock:
-            return list(self.__ws_routes.keys())
+    @override
+    def post(self, *args, **kwargs):
+        with self.__routes_lock:
+            post = super().post(*args, **kwargs)
+            self.__on_routes_change_callback(Change.ADD, *args, **kwargs)
+        return post
+
+    @override
+    def put(self, *args, **kwargs):
+        with self.__routes_lock:
+            put = super().put(*args, **kwargs)
+            self.__on_routes_change_callback(Change.ADD, *args, **kwargs)
+        return put
+
+    @override
+    def patch(self, *args, **kwargs):
+        with self.__routes_lock:
+            patch = super().patch(*args, **kwargs)
+            self.__on_routes_change_callback(Change.ADD, *args, **kwargs)
+        return patch
+
+    @override
+    def delete(self, *args, **kwargs):
+        with self.__routes_lock:
+            delete = super().delete(*args, **kwargs)
+            self.__on_routes_change_callback(Change.ADD, *args, **kwargs)
+        return delete
+
+    @override
+    def head(self, *args, **kwargs):
+        with self.__routes_lock:
+            head = super().head(*args, **kwargs)
+            self.__on_routes_change_callback(Change.ADD, *args, **kwargs)
+        return head
+
+    @override
+    def options(self, *args, **kwargs):
+        with self.__routes_lock:
+            options = super().options(*args, **kwargs)
+            self.__on_routes_change_callback(Change.ADD, *args, **kwargs)
+        return options
+
+    @override
+    def trace(self, *args, **kwargs):
+        with self.__routes_lock:
+            trace = super().trace(*args, **kwargs)
+            self.__on_routes_change_callback(Change.ADD, *args, **kwargs)
+        return trace
+
+    @override
+    def include_router(self, *args, **kwargs):
+        with self.__routes_lock:
+            include_router = super().include_router(*args, **kwargs)
+            self.__on_routes_change_callback(Change.ADD, *args, **kwargs)
+        return include_router
+
+    @override
+    def mount(self, *args, **kwargs):
+        with self.__routes_lock:
+            mount = super().mount(*args, **kwargs)
+            self.__on_routes_change_callback(Change.ADD, *args, **kwargs)
+        return mount
+
+    def visit_routes(self, visit):
+        with self.__routes_lock:
+            return visit(self.root_path, self.__ws_routes, self.routes)
 
     def on_routes_change(self, callback):
         self.__on_routes_change_callback = callback
 
-    def __on_ws_msg(self):
+    def __add_websocket_endpoint(self):
         @self.websocket("/$ws")
         async def websocket_endpoint(websocket: WebSocket):
             await websocket.accept()
             try:
-                while True:
+                while self.__running:
                     data = await websocket.receive_bytes()
                     asyncio.ensure_future(self.__handle_msg(websocket, data))
             except WebSocketDisconnect as e:
@@ -160,3 +230,7 @@ class Service(FastAPI):
             logger.error(
                 "Failed to handle msg: %s, error: %s", req, traceback.format_exc()
             )
+
+    def __signal_handler(self, signal, frame):
+        logger.info("Signal handler triggered: signal: %s, frame: %s", signal, frame)
+        self.__running = False

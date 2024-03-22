@@ -6,6 +6,7 @@ from maxwell.utils.logger import get_logger
 
 from .config import Config
 from .registrar import Registrar
+from .service import Service
 
 logger = get_logger(__name__)
 
@@ -13,8 +14,15 @@ logger = get_logger(__name__)
 class Server(object):
     def __init__(self, service_ref):
         self.__service_ref = service_ref
-        [module_name, service_name] = service_ref.split(":")
-        service = getattr(sys.modules[module_name], service_name)
+
+        if isinstance(service_ref, str):
+            [module_name, service_name] = service_ref.split(":")
+            service = getattr(sys.modules[module_name], service_name)
+        elif isinstance(service_ref, Service):
+            pass
+        else:
+            raise ValueError("The service_ref must be a str or a Service.")
+
         self.__registrar = Registrar(service)
 
     def run(self):
@@ -39,7 +47,6 @@ class Server(object):
             ws_ping_timeout=None,
             lifespan="on",
             interface="asgi3",
-            log_level="info",
             reload=args["reload"],
             log_config=Config.singleton().get_log_config(),
         )

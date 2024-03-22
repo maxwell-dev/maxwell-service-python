@@ -1,4 +1,3 @@
-import asyncio
 from maxwell.utils.connection import MultiAltEndpointsConnection
 
 

@@ -1,4 +1,3 @@
-import asyncio
 from async_lru import alru_cache
 import maxwell.protocol.maxwell_protocol_pb2 as protocol_types
 from maxwell.utils.connection import Event

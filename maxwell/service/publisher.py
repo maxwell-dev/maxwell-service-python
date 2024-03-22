@@ -1,4 +1,3 @@
-import asyncio
 import random
 from maxwell.utils.connection import Connection, Event
 from maxwell.utils.logger import get_logger
