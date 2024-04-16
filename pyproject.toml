@@ -15,7 +15,7 @@ dependencies = [
   "async-lru >= 2.0.4",
   "setproctitle >= 1.3.3",
   "maxwell-protocol >= 0.8.0",
-  "maxwell-utils == 0.7.0",
+  "maxwell-utils >= 0.7.0",
 ]
 description = "The maxwell service implementation for python."
 license = {file = "LICENSE"}
