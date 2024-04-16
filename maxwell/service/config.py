@@ -21,11 +21,14 @@ class Config:
 
     @staticmethod
     def singleton():
-        if Config.__instance == None:
+        if Config.__instance is None:
             Config.__instance = Config()
         return Config.__instance
 
     def get_port(self):
+        port = os.environ.get("port")
+        if port is not None:
+            return int(port)
         port = self.__service_config.get("port")
         if port is None:
             port = self.__get_unused_port()
@@ -34,6 +37,9 @@ class Config:
         return port
 
     def get_set_routes_delay(self):
+        set_routes_delay = os.environ.get("set_routes_delay")
+        if set_routes_delay is not None:
+            return int(set_routes_delay)
         set_routes_delay = self.__service_config.get("set_routes_delay")
         if set_routes_delay is None or set_routes_delay < 0:
             return 2
@@ -41,6 +47,9 @@ class Config:
             return set_routes_delay
 
     def get_proc_name(self):
+        proc_name = os.environ.get("proc_name")
+        if proc_name is not None:
+            return proc_name
         proc_name = self.__service_config.get("proc_name")
         if proc_name is None:
             return "maxwell-service-python"
@@ -48,6 +57,9 @@ class Config:
             return proc_name
 
     def get_master_endpoints(self):
+        master_endpoints = os.environ.get("master_endpoints")
+        if master_endpoints is not None:
+            return master_endpoints.split(",")
         master_endpoints = self.__service_config.get("master_endpoints")
         if master_endpoints is None:
             raise "Please specify master_endpoints in service.toml"
@@ -55,6 +67,9 @@ class Config:
             return master_endpoints
 
     def get_connection_slot_size(self):
+        connection_slot_size = os.environ.get("connection_slot_size")
+        if connection_slot_size is not None:
+            return int(connection_slot_size)
         connection_slot_size = self.__service_config.get("connection_slot_size")
         if connection_slot_size is None:
             return 8
@@ -62,6 +77,9 @@ class Config:
             return connection_slot_size
 
     def get_endpoint_cache_size(self):
+        endpoint_cache_size = os.environ.get("endpoint_cache_size")
+        if endpoint_cache_size is not None:
+            return int(endpoint_cache_size)
         endpoint_cache_size = self.__service_config.get("endpoint_cache_size")
         if endpoint_cache_size is None:
             return 20480
@@ -69,6 +87,9 @@ class Config:
             return endpoint_cache_size
 
     def get_endpoint_cache_ttl(self):
+        endpoint_cache_ttl = os.environ.get("endpoint_cache_ttl")
+        if endpoint_cache_ttl is not None:
+            return int(endpoint_cache_ttl)
         endpoint_cache_ttl = self.__service_config.get("endpoint_cache_ttl")
         if endpoint_cache_ttl is None:
             return 60 * 60 * 24
@@ -128,10 +149,12 @@ class Config:
         return config_file
 
     def __get_root_dir(self):
-        root_dir = os.path.abspath(
+        root_dir = os.environ.get("APP_ROOT_DIR")
+        if root_dir:
+            return root_dir
+        return os.path.abspath(
             os.path.join(sysconfig.get_path("purelib"), "..", "..", "..", "..")
         )
-        return root_dir
 
     def __get_log_dir(self):
         return os.path.join(self.__get_root_dir(), "log")
