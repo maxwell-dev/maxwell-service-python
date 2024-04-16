@@ -40,7 +40,7 @@ class Service(FastAPI):
         self.__ws_routes = {}
         self.__routes_lock = threading.Lock()
         self.__on_routes_change_callback = lambda *args, **kwargs: None
-        self.__running = False
+        self.__running = True
 
         signal.signal(signal.SIGINT, self.__signal_handler)
         self.__add_websocket_endpoint()
@@ -169,11 +169,9 @@ class Service(FastAPI):
                     data = await websocket.receive_bytes()
                     asyncio.ensure_future(self.__handle_msg(websocket, data))
             except WebSocketDisconnect as e:
-                logger.warning("Connection was closed: %s", e)
-            except Exception:
-                logger.error(
-                    "Failed to handle data: %s, error: %s", data, traceback.format_exc()
-                )
+                logger.warning("Connection was closed: reason: %s", e)
+            except Exception as e:
+                logger.error("Failed to handle data: %s, reason: %s", data, e)
 
     async def __handle_msg(self, websocket, data):
         try:
