@@ -158,6 +158,7 @@ class Registrar(Thread):
     @staticmethod
     def __build_register_service_req():
         req = protocol_types.register_service_req_t()
+        req.id = Config.singleton().get_id()
         req.http_port = Config.singleton().get_port()
         return req
 

@@ -25,6 +25,16 @@ class Config:
             Config.__instance = Config()
         return Config.__instance
 
+    def get_id(self):
+        service_id = os.environ.get("id")
+        if service_id is not None:
+            return service_id
+        service_id = self.__service_config.get("id")
+        if service_id is None:
+            return "service-0"
+        else:
+            return service_id
+
     def get_port(self):
         port = os.environ.get("port")
         if port is not None:
