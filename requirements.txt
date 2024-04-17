@@ -50,7 +50,7 @@ maxwell-protocol==0.8.0
     # via
     #   maxwell-service (setup.py)
     #   maxwell-utils
-maxwell-utils==0.7.0
+maxwell-utils==0.7.1
     # via maxwell-service (setup.py)
 orjson==3.9.15
     # via fastapi
