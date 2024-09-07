@@ -160,7 +160,7 @@ if __name__ == "__main__":
     t = threading.Thread(target=add_ws_route_later, daemon=True)
     t.start()
 
-    # t2 = threading.Thread(target=run_publisher, daemon=True)
-    # t2.start()
+    t2 = threading.Thread(target=run_publisher, daemon=True)
+    t2.start()
 
     Server(f"{__name__}:service").run()
