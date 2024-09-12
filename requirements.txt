@@ -52,11 +52,11 @@ markdown-it-py==3.0.0
     # via rich
 markupsafe==2.1.5
     # via jinja2
-maxwell-protocol==0.9.1
+maxwell-protocol==0.9.2
     # via
     #   maxwell-service (setup.py)
     #   maxwell-utils
-maxwell-utils==0.8.0
+maxwell-utils==0.8.1
     # via maxwell-service (setup.py)
 mdurl==0.1.2
     # via markdown-it-py
