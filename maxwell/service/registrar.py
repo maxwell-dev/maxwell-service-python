@@ -201,4 +201,4 @@ class Registrar(Thread):
 
     @staticmethod
     def __prepend_root_path(root_path, path):
-        return root_path.rstrip("/") + "/" + path.lstrip("/")
+        return root_path + path
