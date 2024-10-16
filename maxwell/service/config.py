@@ -72,7 +72,7 @@ class Config:
             return master_endpoints.split(",")
         master_endpoints = self.__service_config.get("master_endpoints")
         if master_endpoints is None:
-            raise "Please specify master_endpoints in service.toml"
+            raise ValueError("Please specify master_endpoints in service.toml")
         else:
             return master_endpoints
 
